@@ -1,0 +1,8 @@
+Env = "local"
+
+ApiPort = 8080
+
+JwtSecret = "change-me"
+
+[db]
+Main = "user:password@tcp(127.0.0.1:3306)/parent_child"

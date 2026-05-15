@@ -1,0 +1,23 @@
+# Editor and local workspace
+.cursor/
+.vscode/
+
+# Logs and runtime files
+*.log
+runtime/
+
+# Go caches and test caches
+.gocache/
+.test-gocache/
+**/.gocache/
+**/.test-gocache/
+
+# Local configuration with secrets
+parent-child-api/conf.toml
+
+# Uni-app / mini-program build output
+parent-child-miniprogram/unpackage/
+
+# OS noise
+.DS_Store
+Thumbs.db
