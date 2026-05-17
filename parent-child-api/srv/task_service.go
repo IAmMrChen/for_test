@@ -76,6 +76,38 @@ func (x taskService) ListTasks(userId int64, familyId int64) []model.Task {
 	return resx.Db.Main.MustListOf(model.Task{}, sql, familyId, model.TaskStatusActive).([]model.Task)
 }
 
+func (x taskService) ClaimTask(operatorUserId int64, req model.TaskClaimRequest) model.TaskRecord {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.TaskId == 0 {
+		panic(fmt.Errorf("task id is required"))
+	}
+
+	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
+	task := x.loadActiveTask(req.FamilyId, req.TaskId)
+	x.requireNoOpenTaskRecord(req.FamilyId, task.Id, target.Id)
+
+	const sql = `
+		INSERT INTO task_records(family_id, task_id, member_id, status)
+		VALUES(@p1, @p2, @p3, @p4)
+	`
+	resx.Db.Main.MustExecute(sql, req.FamilyId, task.Id, target.Id, model.TaskRecordStatusClaimed)
+
+	recordIdValue, ok := resx.Db.Main.MustScalarInt("SELECT LAST_INSERT_ID()")
+	if !ok || recordIdValue == nil {
+		panic(fmt.Errorf("failed to load created task record id"))
+	}
+
+	return model.TaskRecord{
+		Id:       int64(*recordIdValue),
+		FamilyId: req.FamilyId,
+		TaskId:   task.Id,
+		MemberId: target.Id,
+		Status:   model.TaskRecordStatusClaimed,
+	}
+}
+
 func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitRequest) model.TaskRecord {
 	if req.FamilyId == 0 {
 		panic(fmt.Errorf("family id is required"))
@@ -84,28 +116,9 @@ func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitReques
 		panic(fmt.Errorf("task id is required"))
 	}
 
-	operator := MemberService.LoadActiveMember(operatorUserId, req.FamilyId)
-	if operator == nil {
-		panic(fmt.Errorf("permission denied"))
-	}
-
-	target := *operator
-	if req.MemberId != 0 && req.MemberId != operator.Id {
-		member := MemberService.LoadActiveMemberById(req.MemberId)
-		if member == nil || member.FamilyId != req.FamilyId || member.RoleType != model.FamilyRoleChild {
-			panic(fmt.Errorf("target child not found"))
-		}
-		if !memberCanSubmitForChild(*operator, member.IsVirtual) {
-			panic(fmt.Errorf("permission denied"))
-		}
-		target = *member
-	}
-
-	if target.RoleType != model.FamilyRoleChild {
-		panic(fmt.Errorf("only child can submit task"))
-	}
-
+	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
 	task := x.loadActiveTask(req.FamilyId, req.TaskId)
+	x.requireNoOpenTaskRecord(req.FamilyId, task.Id, target.Id)
 	submitRemark := strings.TrimSpace(req.SubmitRemark)
 
 	const sql = `
@@ -126,6 +139,45 @@ func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitReques
 		MemberId:     target.Id,
 		Status:       model.TaskRecordStatusPending,
 		SubmitRemark: submitRemark,
+	}
+}
+
+func (x taskService) resolveTaskTargetMember(operatorUserId, familyId, memberId int64) model.FamilyMember {
+	operator := MemberService.LoadActiveMember(operatorUserId, familyId)
+	if operator == nil {
+		panic(fmt.Errorf("permission denied"))
+	}
+
+	target := *operator
+	if memberId != 0 && memberId != operator.Id {
+		member := MemberService.LoadActiveMemberById(memberId)
+		if member == nil || member.FamilyId != familyId || member.RoleType != model.FamilyRoleChild {
+			panic(fmt.Errorf("target child not found"))
+		}
+		if !memberCanSubmitForChild(*operator, member.IsVirtual) {
+			panic(fmt.Errorf("permission denied"))
+		}
+		target = *member
+	}
+
+	if target.RoleType != model.FamilyRoleChild {
+		panic(fmt.Errorf("only child can submit task"))
+	}
+	return target
+}
+
+func (x taskService) requireNoOpenTaskRecord(familyId, taskId, memberId int64) {
+	const sql = `
+		SELECT COUNT(*)
+		FROM task_records
+		WHERE family_id=@p1
+			AND task_id=@p2
+			AND member_id=@p3
+			AND status IN (@p4, @p5)
+	`
+	count, ok := resx.Db.Main.MustScalarInt(sql, familyId, taskId, memberId, model.TaskRecordStatusClaimed, model.TaskRecordStatusPending)
+	if ok && count != nil && *count > 0 {
+		panic(fmt.Errorf("task record already exists"))
 	}
 }
 

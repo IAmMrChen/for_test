@@ -83,3 +83,19 @@ func TestTaskRecordListRejectsMissingFamily(t *testing.T) {
 
 	TaskService.ListTaskRecords(1, model.TaskRecordListRequest{})
 }
+
+func TestTaskServiceClaimTaskRejectsMissingFamily(t *testing.T) {
+	resx.Db = nil
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatal("ClaimTask should panic")
+		}
+		if fmt.Sprint(v) != "family id is required" {
+			t.Fatalf("panic = %v, want family id is required", v)
+		}
+	}()
+
+	TaskService.ClaimTask(1, model.TaskClaimRequest{TaskId: 1})
+}
