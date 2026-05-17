@@ -44,9 +44,24 @@ func TestIntegrationTaskPointsFlow(t *testing.T) {
 		CycleType: model.TaskCycleTypeDaily,
 	})
 
-	record := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
+	claimed := TaskService.ClaimTask(childUserId, model.TaskClaimRequest{
 		FamilyId: familyId,
 		TaskId:   task.Id,
+	})
+	if claimed.Status != model.TaskRecordStatusClaimed {
+		t.Fatalf("claimed status = %s, want CLAIMED", claimed.Status)
+	}
+
+	mustPanicWith(t, "task record already exists", func() {
+		TaskService.ClaimTask(childUserId, model.TaskClaimRequest{
+			FamilyId: familyId,
+			TaskId:   task.Id,
+		})
+	})
+
+	record := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
+		FamilyId: familyId,
+		RecordId: claimed.Id,
 	})
 	if record.Status != model.TaskRecordStatusPending {
 		t.Fatalf("record status = %s, want PENDING", record.Status)
