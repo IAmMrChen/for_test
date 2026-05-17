@@ -153,3 +153,29 @@ func TestRegisterRoutesTaskCreateRejectsInvalidJSON(t *testing.T) {
 		t.Fatalf("body = %s, want %s", res.Body.String(), want)
 	}
 }
+
+func TestRegisterRoutesTaskClaimRejectsInvalidJSON(t *testing.T) {
+	const jwtSecret = "test-secret"
+	token, err := ux.JwtUtil.SignAuthToken(ux.AuthTokenClaims{UserId: 1}, jwtSecret, time.Hour)
+	if err != nil {
+		t.Fatalf("SignAuthToken error = %v", err)
+	}
+
+	mux := http.NewServeMux()
+	RegisterRoutes(mux, jwtSecret)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/task/claim", strings.NewReader("{"))
+	req.Header.Set("Authorization", "Bearer "+token)
+	res := httptest.NewRecorder()
+
+	mux.ServeHTTP(res, req)
+
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", res.Code, http.StatusBadRequest)
+	}
+
+	want := `{"code":400,"message":"invalid json body"}`
+	if strings.TrimSpace(res.Body.String()) != want {
+		t.Fatalf("body = %s, want %s", res.Body.String(), want)
+	}
+}

@@ -31,6 +31,15 @@ func (x TaskApi) List(w http.ResponseWriter, r *http.Request, token *ux.AuthToke
 	apix.WriteData(w, srv.TaskService.ListTasks(token.UserId, familyId))
 }
 
+func (x TaskApi) Claim(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.TaskClaimRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.TaskService.ClaimTask(token.UserId, req))
+}
+
 func (x TaskApi) Submit(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
 	var req model.TaskSubmitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

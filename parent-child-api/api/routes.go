@@ -29,6 +29,7 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	mux.HandleFunc("POST /api/invite/accept", apix.WithAuth(jwtSecret, inviteApi.Accept))
 	mux.HandleFunc("POST /api/task/create", apix.WithAuth(jwtSecret, taskApi.Create))
 	mux.HandleFunc("GET /api/task/list", apix.WithAuth(jwtSecret, taskApi.List))
+	mux.HandleFunc("POST /api/task/claim", apix.WithAuth(jwtSecret, taskApi.Claim))
 	mux.HandleFunc("POST /api/task/submit", apix.WithAuth(jwtSecret, taskApi.Submit))
 	mux.HandleFunc("POST /api/task/audit", apix.WithAuth(jwtSecret, taskApi.Audit))
 	mux.HandleFunc("GET /api/task/records", apix.WithAuth(jwtSecret, taskApi.Records))
