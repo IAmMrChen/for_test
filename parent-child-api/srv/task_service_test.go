@@ -59,6 +59,22 @@ func TestResolveSubmitMemberRejectsMissingFamily(t *testing.T) {
 	TaskService.SubmitTask(1, model.TaskSubmitRequest{TaskId: 1})
 }
 
+func TestTaskServiceSubmitTaskRejectsMissingRecordAndTask(t *testing.T) {
+	resx.Db = nil
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatal("SubmitTask should panic")
+		}
+		if fmt.Sprint(v) != "task id or record id is required" {
+			t.Fatalf("panic = %v, want task id or record id is required", v)
+		}
+	}()
+
+	TaskService.SubmitTask(1, model.TaskSubmitRequest{FamilyId: 1})
+}
+
 func TestTaskAuditStatusFromApprovedFlag(t *testing.T) {
 	if taskAuditStatus(true) != model.TaskRecordStatusApproved {
 		t.Fatal("approved flag should map to APPROVED")

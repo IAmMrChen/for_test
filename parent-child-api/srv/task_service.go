@@ -112,8 +112,11 @@ func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitReques
 	if req.FamilyId == 0 {
 		panic(fmt.Errorf("family id is required"))
 	}
+	if req.RecordId != 0 {
+		return x.submitClaimedTaskRecord(operatorUserId, req)
+	}
 	if req.TaskId == 0 {
-		panic(fmt.Errorf("task id is required"))
+		panic(fmt.Errorf("task id or record id is required"))
 	}
 
 	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
@@ -140,6 +143,42 @@ func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitReques
 		Status:       model.TaskRecordStatusPending,
 		SubmitRemark: submitRemark,
 	}
+}
+
+func (x taskService) submitClaimedTaskRecord(operatorUserId int64, req model.TaskSubmitRequest) model.TaskRecord {
+	tran := resx.Db.Main.MustCreateTransactionEx()
+	defer tran.MustClose()
+
+	record := loadClaimedTaskRecordForUpdate(tran, req.RecordId)
+	if record.FamilyId != req.FamilyId {
+		panic(fmt.Errorf("task record not found"))
+	}
+
+	operator := MemberService.LoadActiveMember(operatorUserId, record.FamilyId)
+	if operator == nil {
+		panic(fmt.Errorf("permission denied"))
+	}
+	if operator.Id != record.MemberId {
+		member := MemberService.LoadActiveMemberById(record.MemberId)
+		if member == nil || member.FamilyId != record.FamilyId || !memberCanSubmitForChild(*operator, member.IsVirtual) {
+			panic(fmt.Errorf("permission denied"))
+		}
+	}
+
+	submitRemark := strings.TrimSpace(req.SubmitRemark)
+	affected := tran.MustExecute(`
+		UPDATE task_records
+		SET status=@p1, submit_remark=@p2, submit_time=NOW()
+		WHERE id=@p3 AND status=@p4
+	`, model.TaskRecordStatusPending, submitRemark, req.RecordId, model.TaskRecordStatusClaimed)
+	if affected != 1 {
+		panic(fmt.Errorf("task record has been changed"))
+	}
+	tran.MustCommit()
+
+	record.Status = model.TaskRecordStatusPending
+	record.SubmitRemark = submitRemark
+	return record
 }
 
 func (x taskService) resolveTaskTargetMember(operatorUserId, familyId, memberId int64) model.FamilyMember {
@@ -276,6 +315,31 @@ func loadPendingTaskRecordForUpdate(db structGetter, recordId int64) model.TaskR
 
 	record := &model.TaskRecord{}
 	ok := db.MustGetStruct(record, sql, recordId, model.TaskRecordStatusPending)
+	if !ok {
+		panic(fmt.Errorf("task record not found"))
+	}
+	return *record
+}
+
+func loadClaimedTaskRecordForUpdate(db structGetter, recordId int64) model.TaskRecord {
+	const sql = `
+		SELECT id
+			, family_id
+			, task_id
+			, member_id
+			, status
+			, IFNULL(submit_remark, '') AS submit_remark
+			, submit_time
+			, audit_time
+			, audit_by
+			, IFNULL(audit_remark, '') AS audit_remark
+		FROM task_records
+		WHERE id=@p1 AND status=@p2
+		FOR UPDATE
+	`
+
+	record := &model.TaskRecord{}
+	ok := db.MustGetStruct(record, sql, recordId, model.TaskRecordStatusClaimed)
 	if !ok {
 		panic(fmt.Errorf("task record not found"))
 	}
