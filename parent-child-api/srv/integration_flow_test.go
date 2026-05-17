@@ -163,7 +163,7 @@ func ensureIntegrationSchema(t *testing.T) {
 				family_id BIGINT UNSIGNED NOT NULL,
 				task_id BIGINT UNSIGNED NOT NULL,
 				member_id BIGINT UNSIGNED NOT NULL,
-				status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+				status ENUM('CLAIMED', 'PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
 				submit_remark VARCHAR(255) DEFAULT NULL,
 				submit_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				audit_time DATETIME DEFAULT NULL,
@@ -174,6 +174,12 @@ func ensureIntegrationSchema(t *testing.T) {
 				KEY idx_family_member (family_id, member_id),
 				KEY idx_status (status)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		`)
+	}
+	if !integrationEnumColumnContains("task_records", "status", "CLAIMED") {
+		resx.Db.Main.MustExecute(`
+			ALTER TABLE task_records
+			MODIFY COLUMN status ENUM('CLAIMED', 'PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING'
 		`)
 	}
 	if !integrationColumnExists("task_records", "submit_remark") {
@@ -231,6 +237,17 @@ func integrationIndexExists(table string, index string) bool {
 		FROM information_schema.STATISTICS
 		WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=@p1 AND INDEX_NAME=@p2
 	`, table, index) > 0
+}
+
+func integrationEnumColumnContains(table string, column string, value string) bool {
+	return integrationCount(`
+		SELECT COUNT(*)
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA=DATABASE()
+			AND TABLE_NAME=@p1
+			AND COLUMN_NAME=@p2
+			AND COLUMN_TYPE LIKE @p3
+	`, table, column, "%'"+value+"'%") > 0
 }
 
 func integrationCount(sql string, args ...any) int {
