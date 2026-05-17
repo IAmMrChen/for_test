@@ -14,6 +14,18 @@ func TestTaskRecordStatusCanAudit(t *testing.T) {
 	}
 }
 
+func TestTaskRecordStatusCanSubmit(t *testing.T) {
+	if !TaskRecordStatusClaimed.CanSubmit() {
+		t.Fatal("claimed record should be submittable")
+	}
+	if TaskRecordStatusPending.CanSubmit() {
+		t.Fatal("pending record should not be submittable")
+	}
+	if TaskRecordStatusApproved.CanSubmit() {
+		t.Fatal("approved record should not be submittable")
+	}
+}
+
 func TestTaskCycleTypeValid(t *testing.T) {
 	if !TaskCycleTypeOnce.Valid() || !TaskCycleTypeDaily.Valid() || !TaskCycleTypeWeekly.Valid() {
 		t.Fatal("known cycle types should be valid")

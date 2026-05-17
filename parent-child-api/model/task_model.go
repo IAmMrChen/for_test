@@ -24,6 +24,7 @@ const (
 type TaskRecordStatus string
 
 const (
+	TaskRecordStatusClaimed  TaskRecordStatus = "CLAIMED"
 	TaskRecordStatusPending  TaskRecordStatus = "PENDING"
 	TaskRecordStatusApproved TaskRecordStatus = "APPROVED"
 	TaskRecordStatusRejected TaskRecordStatus = "REJECTED"
@@ -31,6 +32,10 @@ const (
 
 func (x TaskRecordStatus) CanAudit() bool {
 	return x == TaskRecordStatusPending
+}
+
+func (x TaskRecordStatus) CanSubmit() bool {
+	return x == TaskRecordStatusClaimed
 }
 
 type PointSourceType string
@@ -62,8 +67,15 @@ type TaskListRequest struct {
 	FamilyId int64 `json:"familyId"`
 }
 
+type TaskClaimRequest struct {
+	FamilyId int64 `json:"familyId"`
+	TaskId   int64 `json:"taskId"`
+	MemberId int64 `json:"memberId"`
+}
+
 type TaskSubmitRequest struct {
 	FamilyId     int64  `json:"familyId"`
+	RecordId     int64  `json:"recordId"`
 	TaskId       int64  `json:"taskId"`
 	MemberId     int64  `json:"memberId"`
 	SubmitRemark string `json:"submitRemark"`
