@@ -44,3 +44,18 @@ func TestVirtualChildMemberInsertArgsUsesOperatorUserIdAsCreatedBy(t *testing.T)
 		t.Fatalf("created_by arg = %v, want operator user id 123", args[6])
 	}
 }
+
+func TestMemberRoleHelpers(t *testing.T) {
+	parent := model.FamilyMember{RoleType: model.FamilyRoleParent}
+	child := model.FamilyMember{RoleType: model.FamilyRoleChild}
+
+	if !memberCanSubmitForChild(parent, true) {
+		t.Fatal("parent should submit for virtual child")
+	}
+	if memberCanSubmitForChild(child, true) {
+		t.Fatal("child should not submit for virtual child through parent helper")
+	}
+	if memberCanSubmitForChild(parent, false) {
+		t.Fatal("parent should not submit for real child through this helper")
+	}
+}

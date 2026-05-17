@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_family` (`family_id`)
+  KEY `idx_family` (`family_id`),
+  KEY `idx_family_status` (`family_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务库表';
 
 -- 5. 任务记录表 (Task Records)
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS `task_records` (
   `task_id` BIGINT UNSIGNED NOT NULL COMMENT '关联任务ID',
   `member_id` BIGINT UNSIGNED NOT NULL COMMENT '执行任务的成员ID (孩子)',
   `status` ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING-待审核, APPROVED-已通过, REJECTED-已驳回',
+  `submit_remark` VARCHAR(255) DEFAULT NULL COMMENT '提交说明',
   `submit_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
   `audit_time` DATETIME DEFAULT NULL COMMENT '审核时间',
   `audit_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '审核人成员ID',
@@ -82,7 +84,9 @@ CREATE TABLE IF NOT EXISTS `task_records` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_family_member` (`family_id`, `member_id`),
-  KEY `idx_status` (`status`)
+  KEY `idx_status` (`status`),
+  KEY `idx_task_member_status` (`task_id`, `member_id`, `status`),
+  KEY `idx_family_status` (`family_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务执行记录表';
 
 -- 6. 奖品库表 (Rewards)
@@ -130,7 +134,9 @@ CREATE TABLE IF NOT EXISTS `point_logs` (
   `source_id` BIGINT UNSIGNED NOT NULL COMMENT '关联源ID (task_records.id 或 reward_records.id)',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录时间',
   PRIMARY KEY (`id`),
-  KEY `idx_member` (`member_id`)
+  KEY `idx_member` (`member_id`),
+  KEY `idx_family_member` (`family_id`, `member_id`),
+  KEY `idx_source` (`source_type`, `source_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分流水表';
 
 CREATE TABLE IF NOT EXISTS `family_invites` (

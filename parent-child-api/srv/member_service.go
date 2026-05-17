@@ -43,6 +43,33 @@ func (x memberService) RequireParentRole(userId, familyId int64) model.FamilyMem
 	return *member
 }
 
+func (x memberService) LoadActiveMemberById(memberId int64) *model.FamilyMember {
+	const sql = `
+		SELECT id
+			, family_id
+			, user_id
+			, role_type
+			, nickname
+			, current_points
+			, total_earned_points
+			, is_virtual
+			, status
+		FROM family_members
+		WHERE id=@p1 AND status=@p2
+	`
+
+	member := &model.FamilyMember{}
+	ok := resx.Db.Main.MustGetStruct(member, sql, memberId, model.FamilyMemberStatusActive)
+	if !ok {
+		return nil
+	}
+	return member
+}
+
+func memberCanSubmitForChild(operator model.FamilyMember, targetIsVirtual bool) bool {
+	return targetIsVirtual && operator.RoleType.IsParentRole()
+}
+
 func virtualChildMemberInsertArgs(req model.VirtualChildCreateRequest, nickname string, operatorUserId int64) []any {
 	return []any{
 		req.FamilyId,
