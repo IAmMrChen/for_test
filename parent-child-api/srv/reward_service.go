@@ -182,3 +182,149 @@ func loadActiveRewardForUpdate(db structGetter, familyId, rewardId int64) model.
 	}
 	return *reward
 }
+
+func rewardOperateStatus(delivered bool) model.RewardRecordStatus {
+	if delivered {
+		return model.RewardRecordStatusDelivered
+	}
+	return model.RewardRecordStatusRejected
+}
+
+func (x rewardService) DeliverReward(operatorUserId int64, req model.RewardRecordOperateRequest) model.RewardRecord {
+	return x.operateRewardRecord(operatorUserId, req.RecordId, true)
+}
+
+func (x rewardService) RejectReward(operatorUserId int64, req model.RewardRecordOperateRequest) model.RewardRecord {
+	return x.operateRewardRecord(operatorUserId, req.RecordId, false)
+}
+
+func (x rewardService) operateRewardRecord(operatorUserId int64, recordId int64, delivered bool) model.RewardRecord {
+	if recordId == 0 {
+		panic(fmt.Errorf("record id is required"))
+	}
+
+	tran := resx.Db.Main.MustCreateTransactionEx()
+	defer tran.MustClose()
+
+	record := loadAppliedRewardRecordForUpdate(tran, recordId)
+	operator := MemberService.RequireParentRole(operatorUserId, record.FamilyId)
+	nextStatus := rewardOperateStatus(delivered)
+
+	affected := tran.MustExecute(`
+		UPDATE reward_records
+		SET status=@p1, operate_time=NOW(), operate_by=@p2
+		WHERE id=@p3 AND status=@p4
+	`, nextStatus, operator.Id, record.Id, model.RewardRecordStatusApplied)
+	if affected != 1 {
+		panic(fmt.Errorf("reward record has been changed"))
+	}
+
+	if !delivered {
+		affected = tran.MustExecute(`
+			UPDATE family_members
+			SET current_points=current_points+@p1
+			WHERE id=@p2 AND family_id=@p3 AND role_type=@p4 AND status=@p5
+		`, record.PointsCost, record.MemberId, record.FamilyId, model.FamilyRoleChild, model.FamilyMemberStatusActive)
+		if affected != 1 {
+			panic(fmt.Errorf("target child not found"))
+		}
+
+		reward := loadRewardForOperate(tran, record.RewardId, record.FamilyId)
+		if reward.Stock >= 0 {
+			tran.MustExecute(`
+				UPDATE rewards
+				SET stock=stock+1
+				WHERE id=@p1 AND family_id=@p2
+			`, record.RewardId, record.FamilyId)
+		}
+
+		tran.MustExecute(`
+			INSERT INTO point_logs(family_id, member_id, points, source_type, source_id)
+			VALUES(@p1, @p2, @p3, @p4, @p5)
+		`, record.FamilyId, record.MemberId, record.PointsCost, model.PointSourceTypeReward, record.Id)
+	}
+
+	tran.MustCommit()
+	record.Status = nextStatus
+	record.OperateBy = &operator.Id
+	return record
+}
+
+func (x rewardService) ReceiveReward(userId int64, req model.RewardRecordOperateRequest) model.RewardRecord {
+	if req.RecordId == 0 {
+		panic(fmt.Errorf("record id is required"))
+	}
+
+	tran := resx.Db.Main.MustCreateTransactionEx()
+	defer tran.MustClose()
+
+	record := loadDeliveredRewardRecordForUpdate(tran, req.RecordId)
+	member := MemberService.LoadActiveMember(userId, record.FamilyId)
+	if member == nil || member.Id != record.MemberId {
+		panic(fmt.Errorf("permission denied"))
+	}
+
+	affected := tran.MustExecute(`
+		UPDATE reward_records
+		SET status=@p1
+		WHERE id=@p2 AND status=@p3
+	`, model.RewardRecordStatusReceived, record.Id, model.RewardRecordStatusDelivered)
+	if affected != 1 {
+		panic(fmt.Errorf("reward record has been changed"))
+	}
+
+	tran.MustCommit()
+	record.Status = model.RewardRecordStatusReceived
+	return record
+}
+
+func loadAppliedRewardRecordForUpdate(db structGetter, recordId int64) model.RewardRecord {
+	return loadRewardRecordForUpdate(db, recordId, model.RewardRecordStatusApplied)
+}
+
+func loadDeliveredRewardRecordForUpdate(db structGetter, recordId int64) model.RewardRecord {
+	return loadRewardRecordForUpdate(db, recordId, model.RewardRecordStatusDelivered)
+}
+
+func loadRewardRecordForUpdate(db structGetter, recordId int64, status model.RewardRecordStatus) model.RewardRecord {
+	const sql = `
+		SELECT id
+			, family_id
+			, reward_id
+			, member_id
+			, points_cost
+			, status
+			, apply_time
+			, operate_time
+			, operate_by
+		FROM reward_records
+		WHERE id=@p1 AND status=@p2
+		FOR UPDATE
+	`
+	record := &model.RewardRecord{}
+	ok := db.MustGetStruct(record, sql, recordId, status)
+	if !ok {
+		panic(fmt.Errorf("reward record not found"))
+	}
+	return *record
+}
+
+func loadRewardForOperate(db structGetter, rewardId int64, familyId int64) model.Reward {
+	const sql = `
+		SELECT id
+			, family_id
+			, name
+			, points_cost
+			, stock
+			, status
+			, created_by
+		FROM rewards
+		WHERE id=@p1 AND family_id=@p2
+	`
+	reward := &model.Reward{}
+	ok := db.MustGetStruct(reward, sql, rewardId, familyId)
+	if !ok {
+		panic(fmt.Errorf("reward not found"))
+	}
+	return *reward
+}

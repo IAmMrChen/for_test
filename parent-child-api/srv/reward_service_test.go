@@ -58,3 +58,12 @@ func TestRewardServiceApplyRejectsMissingFamily(t *testing.T) {
 
 	RewardService.ApplyReward(1, model.RewardApplyRequest{RewardId: 1})
 }
+
+func TestRewardOperateStatusFromDeliverFlag(t *testing.T) {
+	if rewardOperateStatus(true) != model.RewardRecordStatusDelivered {
+		t.Fatal("deliver flag should map to DELIVERED")
+	}
+	if rewardOperateStatus(false) != model.RewardRecordStatusRejected {
+		t.Fatal("reject flag should map to REJECTED")
+	}
+}
