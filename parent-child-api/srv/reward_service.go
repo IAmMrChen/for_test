@@ -328,3 +328,45 @@ func loadRewardForOperate(db structGetter, rewardId int64, familyId int64) model
 	}
 	return *reward
 }
+
+func (x rewardService) ListRewardRecords(userId int64, req model.RewardRecordListRequest) []model.RewardRecordListItem {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+
+	member := MemberService.LoadActiveMember(userId, req.FamilyId)
+	if member == nil {
+		panic(fmt.Errorf("permission denied"))
+	}
+
+	sql := `
+		SELECT r.id
+			, r.family_id
+			, r.reward_id
+			, w.name AS reward_name
+			, r.member_id
+			, m.nickname
+			, r.points_cost
+			, r.status
+			, r.apply_time
+			, r.operate_time
+			, r.operate_by
+		FROM reward_records r
+		INNER JOIN rewards w ON w.id = r.reward_id
+		INNER JOIN family_members m ON m.id = r.member_id
+		WHERE r.family_id=@p1
+	`
+	args := []any{req.FamilyId}
+
+	if !member.RoleType.IsParentRole() {
+		sql += " AND r.member_id=@p2"
+		args = append(args, member.Id)
+	}
+	if req.Status != "" {
+		sql += fmt.Sprintf(" AND r.status=@p%d", len(args)+1)
+		args = append(args, req.Status)
+	}
+	sql += " ORDER BY r.id DESC"
+
+	return resx.Db.Main.MustListOf(model.RewardRecordListItem{}, sql, args...).([]model.RewardRecordListItem)
+}
