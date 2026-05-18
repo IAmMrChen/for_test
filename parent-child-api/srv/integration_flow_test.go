@@ -87,6 +87,8 @@ func cleanupIntegrationFamily(t *testing.T, familyId int64) {
 	}
 
 	resx.Db.Main.MustExecute("DELETE FROM point_logs WHERE family_id=@p1", familyId)
+	resx.Db.Main.MustExecute("DELETE FROM reward_records WHERE family_id=@p1", familyId)
+	resx.Db.Main.MustExecute("DELETE FROM rewards WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM task_records WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM tasks WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM family_invites WHERE family_id=@p1", familyId)
@@ -212,6 +214,53 @@ func ensureIntegrationSchema(t *testing.T) {
 	}
 	if !integrationIndexExists("point_logs", "idx_source") {
 		resx.Db.Main.MustExecute("CREATE INDEX idx_source ON point_logs(source_type, source_id)")
+	}
+
+	if !integrationTableExists("rewards") {
+		resx.Db.Main.MustExecute(`
+			CREATE TABLE rewards (
+				id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+				family_id BIGINT UNSIGNED NOT NULL,
+				name VARCHAR(128) NOT NULL,
+				points_cost INT NOT NULL DEFAULT 0,
+				stock INT NOT NULL DEFAULT -1,
+				status TINYINT NOT NULL DEFAULT 1,
+				created_by BIGINT UNSIGNED NOT NULL,
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				PRIMARY KEY (id),
+				KEY idx_family (family_id)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		`)
+	}
+	if !integrationIndexExists("rewards", "idx_family_status") {
+		resx.Db.Main.MustExecute("CREATE INDEX idx_family_status ON rewards(family_id, status)")
+	}
+
+	if !integrationTableExists("reward_records") {
+		resx.Db.Main.MustExecute(`
+			CREATE TABLE reward_records (
+				id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+				family_id BIGINT UNSIGNED NOT NULL,
+				reward_id BIGINT UNSIGNED NOT NULL,
+				member_id BIGINT UNSIGNED NOT NULL,
+				points_cost INT NOT NULL,
+				status ENUM('APPLIED', 'DELIVERED', 'RECEIVED', 'REJECTED') NOT NULL DEFAULT 'APPLIED',
+				apply_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				operate_time DATETIME DEFAULT NULL,
+				operate_by BIGINT UNSIGNED DEFAULT NULL,
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY (id),
+				KEY idx_family_member (family_id, member_id),
+				KEY idx_status (status)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		`)
+	}
+	if !integrationIndexExists("reward_records", "idx_reward_member_status") {
+		resx.Db.Main.MustExecute("CREATE INDEX idx_reward_member_status ON reward_records(reward_id, member_id, status)")
+	}
+	if !integrationIndexExists("reward_records", "idx_family_status") {
+		resx.Db.Main.MustExecute("CREATE INDEX idx_family_status ON reward_records(family_id, status)")
 	}
 }
 

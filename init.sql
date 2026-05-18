@@ -102,7 +102,8 @@ CREATE TABLE IF NOT EXISTS `rewards` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_family` (`family_id`)
+  KEY `idx_family` (`family_id`),
+  KEY `idx_family_status` (`family_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖品库表';
 
 -- 7. 奖品兑换记录表 (Reward Records)
@@ -120,7 +121,9 @@ CREATE TABLE IF NOT EXISTS `reward_records` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_family_member` (`family_id`, `member_id`),
-  KEY `idx_status` (`status`)
+  KEY `idx_status` (`status`),
+  KEY `idx_reward_member_status` (`reward_id`, `member_id`, `status`),
+  KEY `idx_family_status` (`family_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖品兑换记录表';
 
 -- 8. 积分流水表 (Point Logs)
