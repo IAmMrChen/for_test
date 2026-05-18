@@ -42,3 +42,19 @@ func TestNormalizeRewardCreateRequest(t *testing.T) {
 		t.Fatalf("stock = %d, want -1 unlimited stock", req.Stock)
 	}
 }
+
+func TestRewardServiceApplyRejectsMissingFamily(t *testing.T) {
+	resx.Db = nil
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatal("ApplyReward should panic")
+		}
+		if fmt.Sprint(v) != "family id is required" {
+			t.Fatalf("panic = %v, want family id is required", v)
+		}
+	}()
+
+	RewardService.ApplyReward(1, model.RewardApplyRequest{RewardId: 1})
+}
