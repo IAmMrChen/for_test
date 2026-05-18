@@ -5,6 +5,7 @@ import (
 
 	"parent-child-api/api/apix"
 	authapi "parent-child-api/api/auth"
+	dashboardapi "parent-child-api/api/dashboard"
 	demoapi "parent-child-api/api/demo"
 	familyapi "parent-child-api/api/family"
 	inviteapi "parent-child-api/api/invite"
@@ -15,6 +16,7 @@ import (
 
 func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	authApi := authapi.AuthApi{JwtSecret: jwtSecret}
+	dashboardApi := dashboardapi.DashboardApi{}
 	demoApi := demoapi.DemoApi{}
 	familyApi := familyapi.FamilyApi{}
 	memberApi := memberapi.MemberApi{}
@@ -23,6 +25,7 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	rewardApi := rewardapi.RewardApi{}
 
 	mux.HandleFunc("POST /api/auth/demoLogin", recoverRoute(authApi.DemoLogin))
+	mux.HandleFunc("GET /api/dashboard/summary", recoverRoute(apix.WithAuth(jwtSecret, dashboardApi.Summary)))
 	mux.HandleFunc("GET /api/demo/me", recoverRoute(apix.WithAuth(jwtSecret, demoApi.Me)))
 	mux.HandleFunc("POST /api/family/create", recoverRoute(apix.WithAuth(jwtSecret, familyApi.Create)))
 	mux.HandleFunc("GET /api/family/list", recoverRoute(apix.WithAuth(jwtSecret, familyApi.List)))
