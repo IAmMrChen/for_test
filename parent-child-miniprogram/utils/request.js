@@ -36,10 +36,12 @@ export function request(options) {
       }
     })
   }).catch((error) => {
-    uni.showToast({
-      title: error.message || '请求失败',
-      icon: 'none'
-    })
+    if (error.statusCode !== 401) {
+      uni.showToast({
+        title: error.message || '请求失败',
+        icon: 'none'
+      })
+    }
     throw error
   })
 }

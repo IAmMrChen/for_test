@@ -94,6 +94,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 
+import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { auditTask, claimTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
@@ -133,7 +134,7 @@ onShow(() => {
   loadHome()
 })
 
-async function loadHome() {
+async function loadHome(retried = false) {
   const family = getCurrentFamily()
   if (!family) {
     uni.reLaunch({ url: '/pages/family-select/index' })
@@ -160,10 +161,16 @@ async function loadHome() {
       pendingRecords.value = pending || []
       parentPendingRecords.value = []
     } else if (isParentRole.value) {
-      parentPendingRecords.value = await listTaskRecords({ familyId, status: 'PENDING' })
+      parentPendingRecords.value = (await listTaskRecords({ familyId, status: 'PENDING' })) || []
       claimedRecords.value = []
       pendingRecords.value = []
     }
+  } catch (error) {
+    if (error.statusCode !== 401 || retried) {
+      throw error
+    }
+    await ensureDemoLogin(true)
+    await loadHome(true)
   } finally {
     loading.value = false
   }

@@ -56,7 +56,13 @@ async function loadFamilies() {
   loading.value = true
   try {
     await ensureDemoLogin()
-    families.value = await listFamilies()
+    families.value = (await listFamilies()) || []
+  } catch (error) {
+    if (error.statusCode !== 401) {
+      throw error
+    }
+    await ensureDemoLogin(true)
+    families.value = (await listFamilies()) || []
   } finally {
     loading.value = false
   }
