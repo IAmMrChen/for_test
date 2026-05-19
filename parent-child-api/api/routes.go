@@ -10,6 +10,7 @@ import (
 	familyapi "parent-child-api/api/family"
 	inviteapi "parent-child-api/api/invite"
 	memberapi "parent-child-api/api/member"
+	pointapi "parent-child-api/api/point"
 	rewardapi "parent-child-api/api/reward"
 	taskapi "parent-child-api/api/task"
 )
@@ -21,6 +22,7 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	familyApi := familyapi.FamilyApi{}
 	memberApi := memberapi.MemberApi{}
 	inviteApi := inviteapi.InviteApi{}
+	pointApi := pointapi.PointApi{}
 	taskApi := taskapi.TaskApi{}
 	rewardApi := rewardapi.RewardApi{}
 
@@ -33,6 +35,7 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	mux.HandleFunc("GET /api/member/list", recoverRoute(apix.WithAuth(jwtSecret, memberApi.List)))
 	mux.HandleFunc("POST /api/invite/create", recoverRoute(apix.WithAuth(jwtSecret, inviteApi.Create)))
 	mux.HandleFunc("POST /api/invite/accept", recoverRoute(apix.WithAuth(jwtSecret, inviteApi.Accept)))
+	mux.HandleFunc("GET /api/point/logs", recoverRoute(apix.WithAuth(jwtSecret, pointApi.Logs)))
 	mux.HandleFunc("POST /api/task/create", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Create)))
 	mux.HandleFunc("GET /api/task/list", recoverRoute(apix.WithAuth(jwtSecret, taskApi.List)))
 	mux.HandleFunc("POST /api/task/claim", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Claim)))
