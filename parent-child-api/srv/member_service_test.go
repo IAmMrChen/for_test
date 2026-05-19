@@ -45,6 +45,12 @@ func TestVirtualChildMemberInsertArgsUsesOperatorUserIdAsCreatedBy(t *testing.T)
 	}
 }
 
+func TestMemberListRequiresFamilyId(t *testing.T) {
+	mustPanicWith(t, "family id is required", func() {
+		MemberService.ListMembers(1001, 0)
+	})
+}
+
 func TestMemberRoleHelpers(t *testing.T) {
 	parent := model.FamilyMember{RoleType: model.FamilyRoleParent}
 	child := model.FamilyMember{RoleType: model.FamilyRoleChild}
