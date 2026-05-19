@@ -240,7 +240,7 @@ export function auditTask(data) {
 Run:
 
 ```powershell
-Get-ChildItem parent-child-miniprogram\config,parent-child-miniprogram\utils,parent-child-miniprogram\api -Filter *.js -Recurse | ForEach-Object { Get-Content -Raw $_.FullName | node --input-type=module --check }
+Get-ChildItem parent-child-miniprogram\config,parent-child-miniprogram\utils,parent-child-miniprogram\api -Filter *.js -Recurse | ForEach-Object { node --check $_.FullName }
 ```
 
 Expected: exit 0。
@@ -445,7 +445,7 @@ git commit -m "fix: 修复小程序页面文案"
 Run:
 
 ```powershell
-Get-ChildItem parent-child-miniprogram\config,parent-child-miniprogram\utils,parent-child-miniprogram\api -Filter *.js -Recurse | ForEach-Object { Get-Content -Raw $_.FullName | node --input-type=module --check }
+Get-ChildItem parent-child-miniprogram\config,parent-child-miniprogram\utils,parent-child-miniprogram\api -Filter *.js -Recurse | ForEach-Object { node --check $_.FullName }
 ```
 
 Expected: exit 0。
