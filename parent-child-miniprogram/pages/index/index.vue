@@ -1,271 +1,441 @@
 <template>
   <view class="container">
-    <!-- 顶部导航栏模拟 -->
     <view class="navbar">
       <view class="current-family">
-        <text class="greeting">Hi, {{ currentRole === 'CHILD' ? '大宝' : '爸爸' }} 👋</text>
-        <text class="family-name">{{ currentFamily?.name || '幸福一家人' }}</text>
+        <text class="greeting">{{ greetingText }}</text>
+        <text class="family-name">{{ familyName }}</text>
       </view>
-      <view class="points-card" v-if="isChild">
+      <view v-if="isChild" class="points-card">
         <text class="points-label">当前积分</text>
-        <view class="points-value">350 <text class="unit">分</text></view>
+        <view class="points-value">{{ summary.currentPoints || 0 }} <text class="unit">分</text></view>
       </view>
     </view>
 
-    <!-- 角色视角切换 (开发调试用) -->
-    <view class="debug-toggle">
-      <button size="mini" @click="toggleRole">切换视角: {{ isChild ? '孩子' : '家长' }}</button>
+    <view v-if="loading" class="state-block">
+      <text>正在加载首页...</text>
     </view>
 
-    <!-- 孩子视角：任务列表 -->
-    <view v-if="isChild" class="content-area">
-      <view class="section-title">今日任务</view>
-      <view class="task-list">
-        <view class="task-item" v-for="task in childTasks" :key="task.id">
+    <view v-else-if="isChild" class="content-area">
+      <view class="summary-row">
+        <view class="summary-item">
+          <text class="summary-num">{{ summary.myClaimedTaskCount || 0 }}</text>
+          <text class="summary-label">已领取</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-num">{{ summary.myPendingTaskCount || 0 }}</text>
+          <text class="summary-label">审核中</text>
+        </view>
+      </view>
+
+      <view class="section-title">可执行任务</view>
+      <view v-if="taskRows.length === 0" class="state-block">
+        <text>暂无可执行任务</text>
+      </view>
+      <view v-else class="task-list">
+        <view class="task-item" v-for="task in taskRows" :key="task.id">
           <view class="task-info">
             <view class="task-title">{{ task.title }}</view>
             <view class="task-reward">+{{ task.points }} 积分</view>
           </view>
-          <button 
-            class="action-btn" 
-            :class="task.status"
-            @click="submitTask(task)"
+          <button
+            class="action-btn"
+            :class="task.viewStatus"
+            :disabled="task.viewStatus === 'pending'"
+            @click="handleTaskAction(task)"
           >
-            {{ task.status === 'pending' ? '去完成' : (task.status === 'reviewing' ? '审核中' : '已完成') }}
+            {{ taskButtonText(task) }}
           </button>
         </view>
       </view>
     </view>
 
-    <!-- 家长视角：待办看板 -->
     <view v-else class="content-area">
       <view class="dashboard-stats">
         <view class="stat-item">
-          <view class="stat-num text-orange">3</view>
+          <view class="stat-num text-orange">{{ summary.familyPendingTaskCount || 0 }}</view>
           <view class="stat-desc">待审核</view>
         </view>
         <view class="stat-item">
-          <view class="stat-num text-green">1</view>
+          <view class="stat-num text-green">{{ summary.familyAppliedRewardCount || 0 }}</view>
           <view class="stat-desc">待发奖</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-num text-blue">{{ summary.activeTaskCount || 0 }}</view>
+          <view class="stat-desc">可用任务</view>
         </view>
       </view>
 
       <view class="section-title">待办事项</view>
-      <view class="audit-list">
-        <view class="audit-item" v-for="audit in pendingAudits" :key="audit.id">
+      <view v-if="parentPendingRecords.length === 0" class="state-block">
+        <text>当前没有待审核任务</text>
+      </view>
+      <view v-else class="audit-list">
+        <view class="audit-item" v-for="record in parentPendingRecords" :key="record.id">
           <view class="audit-header">
-            <text class="child-name">{{ audit.childName }}</text>
-            <text class="time">{{ audit.time }}</text>
+            <text class="child-name">{{ record.nickname || '孩子' }}</text>
+            <text class="time">{{ formatTime(record.submitTime) }}</text>
           </view>
           <view class="audit-content">
-            <text>完成了任务：</text><text style="font-weight: bold;">{{ audit.taskName }}</text>
+            <text>提交了任务：</text>
+            <text class="strong">{{ record.taskTitle }}</text>
           </view>
+          <view v-if="record.submitRemark" class="audit-remark">{{ record.submitRemark }}</view>
           <view class="audit-actions">
-            <button class="btn-reject" size="mini" type="warn" plain>驳回</button>
-            <button class="btn-approve" size="mini" type="primary">通过</button>
+            <button class="btn-reject" size="mini" plain @click="audit(record, false)">驳回</button>
+            <button class="btn-approve" size="mini" type="primary" @click="audit(record, true)">通过</button>
           </view>
         </view>
       </view>
     </view>
-
   </view>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { computed, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 
-const currentFamily = ref(null);
-const currentRole = ref('CHILD'); // CHILD or PARENT
+import { getDashboardSummary } from '../../api/dashboard.js'
+import { auditTask, claimTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
+import { getCurrentFamily } from '../../utils/storage.js'
+
+const loading = ref(false)
+const currentFamily = ref(null)
+const summary = ref({})
+const tasks = ref([])
+const claimedRecords = ref([])
+const pendingRecords = ref([])
+const parentPendingRecords = ref([])
+
+const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
+const isChild = computed(() => roleType.value === 'CHILD')
+const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleType.value))
+const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '当前家庭')
+const greetingText = computed(() => {
+  const nickname = summary.value.nickname || currentFamily.value?.nickname || roleName(roleType.value)
+  return `Hi，${nickname}`
+})
+
+const taskRows = computed(() => {
+  return tasks.value.map((task) => {
+    const claimed = claimedRecords.value.find((record) => record.taskId === task.id)
+    const pending = pendingRecords.value.find((record) => record.taskId === task.id)
+    if (pending) {
+      return { ...task, viewStatus: 'pending', record: pending }
+    }
+    if (claimed) {
+      return { ...task, viewStatus: 'claimed', record: claimed }
+    }
+    return { ...task, viewStatus: 'claimable', record: null }
+  })
+})
 
 onShow(() => {
-  const stored = uni.getStorageSync('currentFamily');
-  if (stored) {
-    currentFamily.value = stored;
-    currentRole.value = stored.roleType === 'CHILD' ? 'CHILD' : 'PARENT';
+  loadHome()
+})
+
+async function loadHome() {
+  const family = getCurrentFamily()
+  if (!family) {
+    uni.reLaunch({ url: '/pages/family-select/index' })
+    return
   }
-});
 
-const isChild = computed(() => currentRole.value === 'CHILD');
+  currentFamily.value = family
+  loading.value = true
+  try {
+    const familyId = family.familyId
+    const [summaryData, taskList] = await Promise.all([
+      getDashboardSummary(familyId),
+      listTasks(familyId)
+    ])
+    summary.value = summaryData || {}
+    tasks.value = taskList || []
 
-const toggleRole = () => {
-  currentRole.value = currentRole.value === 'CHILD' ? 'PARENT' : 'CHILD';
-};
+    if (summary.value.roleType === 'CHILD') {
+      const [claimed, pending] = await Promise.all([
+        listTaskRecords({ familyId, status: 'CLAIMED' }),
+        listTaskRecords({ familyId, status: 'PENDING' })
+      ])
+      claimedRecords.value = claimed || []
+      pendingRecords.value = pending || []
+      parentPendingRecords.value = []
+    } else if (isParentRole.value) {
+      parentPendingRecords.value = await listTaskRecords({ familyId, status: 'PENDING' })
+      claimedRecords.value = []
+      pendingRecords.value = []
+    }
+  } finally {
+    loading.value = false
+  }
+}
 
-// 模拟数据
-const childTasks = ref([
-  { id: 1, title: '按时刷牙', points: 5, status: 'pending' },
-  { id: 2, title: '整理书包', points: 10, status: 'reviewing' },
-  { id: 3, title: '阅读30分钟', points: 20, status: 'finished' }
-]);
+async function handleTaskAction(task) {
+  const familyId = currentFamily.value.familyId
+  if (task.viewStatus === 'claimable') {
+    await claimTask({ familyId, taskId: task.id })
+    uni.showToast({ title: '已领取任务', icon: 'success' })
+    await loadHome()
+    return
+  }
+  if (task.viewStatus === 'claimed') {
+    await submitTask({ familyId, recordId: task.record.id })
+    uni.showToast({ title: '已提交审核', icon: 'success' })
+    await loadHome()
+  }
+}
 
-const pendingAudits = ref([
-  { id: 101, childName: '大宝', taskName: '扫地', time: '10:30' },
-  { id: 102, childName: '大宝', taskName: '背古诗', time: 'Yesterday' }
-]);
+async function audit(record, approved) {
+  await auditTask({
+    recordId: record.id,
+    approved
+  })
+  uni.showToast({
+    title: approved ? '已通过' : '已驳回',
+    icon: 'success'
+  })
+  await loadHome()
+}
 
-const submitTask = (task) => {
-  if (task.status !== 'pending') return;
-  uni.showToast({ title: '已提交，等爸爸妈妈审核', icon: 'success' });
-  task.status = 'reviewing';
-};
+function taskButtonText(task) {
+  const map = {
+    claimable: '领取',
+    claimed: '提交',
+    pending: '审核中'
+  }
+  return map[task.viewStatus] || '查看'
+}
+
+function roleName(role) {
+  const map = {
+    OWNER: '家主',
+    ADMIN: '管理员',
+    PARENT: '家长',
+    CHILD: '孩子'
+  }
+  return map[role] || '用户'
+}
+
+function formatTime(value) {
+  if (!value) {
+    return ''
+  }
+  const date = new Date(value)
+  const hour = `${date.getHours()}`.padStart(2, '0')
+  const minute = `${date.getMinutes()}`.padStart(2, '0')
+  return `${hour}:${minute}`
+}
 </script>
 
 <style>
 .container {
-  min-height: 100vh;
   background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
-/* 导航栏 */
 .navbar {
+  align-items: flex-end;
   background: #fff;
-  padding: 44px 20px 20px 20px; /* 适配异形屏大致高度 */
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  padding: 44px 20px 20px;
 }
+
 .current-family {
   display: flex;
   flex-direction: column;
 }
+
 .greeting {
+  color: #1f2937;
   font-size: 20px;
-  font-weight: bold;
-  color: #333;
+  font-weight: 700;
 }
+
 .family-name {
-  font-size: 12px;
   color: #94a3b8;
-  margin-top: 2px;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .points-card {
-  text-align: right;
   display: flex;
   flex-direction: column;
-}
-.points-label {
-  font-size: 10px;
-  color: #999;
-}
-.points-value {
-  font-size: 20px;
-  font-weight: bold;
-  color: #f59e0b;
-}
-.unit {
-  font-size: 12px;
+  text-align: right;
 }
 
-.debug-toggle {
-  padding: 10px;
-  text-align: center;
-  background: #ffe4e6;
-  margin-bottom: 10px;
+.points-label {
+  color: #999;
+  font-size: 10px;
+}
+
+.points-value {
+  color: #f59e0b;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.unit {
+  font-size: 12px;
 }
 
 .content-area {
   padding: 20px;
 }
+
 .section-title {
+  color: #1f2937;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 12px;
-  color: #333;
 }
 
-/* 孩子任务列表 */
-.task-item {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.task-title {
-  font-size: 16px;
-  font-weight: 500;
-}
-.task-reward {
-  font-size: 12px;
-  color: #f59e0b;
-  margin-top: 4px;
-}
-.action-btn {
-  font-size: 12px;
-  padding: 0 16px;
-  height: 32px;
-  line-height: 32px;
-  border-radius: 20px;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  margin: 0;
-}
-.action-btn.reviewing {
-  background: #fbbf24;
-}
-.action-btn.finished {
-  background: #e2e8f0;
-  color: #94a3b8;
-}
-
-/* 家长看板 */
+.summary-row,
 .dashboard-stats {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
 }
+
+.summary-item,
 .stat-item {
-  flex: 1;
   background: #fff;
+  border-radius: 10px;
+  flex: 1;
   padding: 16px;
-  border-radius: 12px;
   text-align: center;
 }
+
+.summary-num,
 .stat-num {
   font-size: 24px;
-  font-weight: bold;
+  font-weight: 700;
 }
-.text-orange { color: #f97316; }
-.text-green { color: #10b981; }
+
+.summary-num {
+  color: #2563eb;
+}
+
+.summary-label,
 .stat-desc {
-  font-size: 12px;
   color: #64748b;
+  font-size: 12px;
   margin-top: 4px;
 }
 
+.text-orange {
+  color: #f97316;
+}
+
+.text-green {
+  color: #10b981;
+}
+
+.text-blue {
+  color: #2563eb;
+}
+
+.task-list,
 .audit-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.audit-item {
+
+.task-item,
+.audit-item,
+.state-block {
   background: #fff;
+  border-radius: 10px;
   padding: 16px;
-  border-radius: 12px;
 }
-.audit-header {
+
+.task-item {
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.task-reward {
+  color: #f59e0b;
   font-size: 12px;
+}
+
+.action-btn {
+  background: #3b82f6;
+  border: none;
+  border-radius: 18px;
+  color: #fff;
+  font-size: 12px;
+  height: 32px;
+  line-height: 32px;
+  margin: 0;
+  padding: 0 16px;
+}
+
+.action-btn.claimed {
+  background: #10b981;
+}
+
+.action-btn.pending {
+  background: #e5e7eb;
   color: #64748b;
 }
-.child-name {
-  font-weight: bold;
-  color: #333;
+
+.audit-header {
+  color: #64748b;
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
+
+.child-name,
+.strong {
+  color: #1f2937;
+  font-weight: 700;
+}
+
 .audit-content {
-  margin-bottom: 12px;
+  color: #374151;
   font-size: 14px;
+  margin-bottom: 10px;
 }
+
+.audit-remark {
+  background: #f8fafc;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 12px;
+  padding: 8px;
+}
+
 .audit-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.btn-reject,
+.btn-approve {
+  margin: 0;
+}
+
+.state-block {
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
 }
 </style>
