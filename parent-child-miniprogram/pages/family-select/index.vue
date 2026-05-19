@@ -1,158 +1,218 @@
 <template>
   <view class="container">
     <view class="header">
-      <text class="title">选择要进入的家庭</text>
-      <text class="subtitle">请选择您当前的身份</text>
+      <text class="title">选择家庭</text>
+      <text class="subtitle">进入一个家庭后，就可以查看任务、积分和奖励</text>
     </view>
 
-    <view class="family-list">
-      <!-- 模拟数据：家庭列表 -->
-      <view 
-        class="family-card" 
-        v-for="(family, index) in families" 
-        :key="index"
+    <view v-if="loading" class="state-block">
+      <text>正在加载家庭...</text>
+    </view>
+
+    <view v-else-if="families.length === 0" class="state-block">
+      <text class="empty-title">暂无家庭</text>
+      <text class="empty-desc">请先在后端创建家庭，或接受家人发来的邀请。</text>
+      <button class="retry-btn" size="mini" @click="loadFamilies">重新加载</button>
+    </view>
+
+    <view v-else class="family-list">
+      <view
+        class="family-card"
+        v-for="family in families"
+        :key="family.familyId"
         @click="selectFamily(family)"
       >
         <view class="card-left">
-          <view class="avatar-placeholder">{{ family.name[0] }}</view>
+          <view class="avatar-placeholder">{{ familyInitial(family) }}</view>
           <view class="info">
-            <text class="family-name">{{ family.name }}</text>
+            <text class="family-name">{{ family.familyName }}</text>
             <view class="role-badge" :class="family.roleType.toLowerCase()">
-              <text>{{ getRoleName(family.roleType) }}</text>
+              <text>{{ roleName(family.roleType) }}</text>
             </view>
           </view>
         </view>
-        <view class="card-right">
-          <text class="enter-btn">进入</text>
-        </view>
-      </view>
-
-      <!-- 创建新家庭入口 -->
-      <view class="create-card" @click="createNewFamily">
-        <text class="plus-icon">+</text>
-        <text>创建新家庭</text>
+        <text class="enter-btn">进入</text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 
-// 模拟数据
-const families = ref([
-  { id: 1, name: "幸福一家人", roleType: "OWNER", roleName: "爸爸" },
-  { id: 2, name: "外婆家", roleType: "PARENT", roleName: "舅舅" },
-  { id: 3, name: "测试家庭", roleType: "CHILD", roleName: "大宝" }
-]);
+import { ensureDemoLogin } from '../../api/auth.js'
+import { listFamilies } from '../../api/family.js'
+import { setCurrentFamily } from '../../utils/storage.js'
 
-const getRoleName = (type) => {
+const loading = ref(false)
+const families = ref([])
+
+onShow(() => {
+  loadFamilies()
+})
+
+async function loadFamilies() {
+  loading.value = true
+  try {
+    await ensureDemoLogin()
+    families.value = await listFamilies()
+  } finally {
+    loading.value = false
+  }
+}
+
+function selectFamily(family) {
+  setCurrentFamily(family)
+  uni.switchTab({
+    url: '/pages/index/index'
+  })
+}
+
+function familyInitial(family) {
+  return (family.familyName || '家').slice(0, 1)
+}
+
+function roleName(roleType) {
   const map = {
     OWNER: '家主',
     ADMIN: '管理员',
     PARENT: '家长',
     CHILD: '孩子'
-  };
-  return map[type] || type;
-};
-
-const selectFamily = (family) => {
-  // 存储 familyId 到本地，并跳转首页
-  uni.setStorageSync('currentFamily', family);
-  uni.switchTab({
-    url: '/pages/index/index'
-  });
-};
-
-const createNewFamily = () => {
-  uni.showToast({ title: '去创建家庭页面', icon: 'none' });
-};
+  }
+  return map[roleType] || roleType
+}
 </script>
 
 <style>
 .container {
-  padding: 40px 20px;
+  min-height: 100vh;
+  padding: 48px 20px 24px;
+  background: #f5f7fa;
 }
+
 .header {
-  margin-bottom: 40px;
   display: flex;
   flex-direction: column;
+  margin-bottom: 28px;
 }
+
 .title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #2c3e50;
+  color: #1f2937;
+  font-size: 26px;
+  font-weight: 700;
   margin-bottom: 8px;
 }
+
 .subtitle {
+  color: #64748b;
   font-size: 14px;
-  color: #7f8c8d;
+  line-height: 20px;
 }
+
 .family-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
+
 .family-card {
+  align-items: center;
   background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: 18px;
 }
+
 .card-left {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 12px;
 }
+
 .avatar-placeholder {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #e0f2fe;
-  color: #0284c7;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  background: #dbeafe;
+  border-radius: 50%;
+  color: #2563eb;
+  display: flex;
   font-size: 18px;
+  font-weight: 700;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
 }
+
 .info {
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
+
 .family-name {
+  color: #111827;
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: 4px;
 }
+
 .role-badge {
+  border-radius: 4px;
+  display: flex;
   font-size: 12px;
   padding: 2px 8px;
-  border-radius: 4px;
   width: fit-content;
-  display: flex;
 }
-.role-badge.owner { background: #fef3c7; color: #d97706; }
-.role-badge.parent { background: #d1fae5; color: #059669; }
-.role-badge.child { background: #fee2e2; color: #dc2626; }
+
+.role-badge.owner {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.role-badge.admin,
+.role-badge.parent {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.role-badge.child {
+  background: #fee2e2;
+  color: #dc2626;
+}
 
 .enter-btn {
-  font-size: 14px;
   color: #94a3b8;
+  font-size: 14px;
 }
 
-.create-card {
-  border: 2px dashed #cbd5e1;
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
+.state-block {
   align-items: center;
-  gap: 8px;
+  background: #fff;
+  border-radius: 12px;
   color: #64748b;
-  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 36px 20px;
+  text-align: center;
+}
+
+.empty-title {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.empty-desc {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.retry-btn {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+  margin-top: 8px;
 }
 </style>

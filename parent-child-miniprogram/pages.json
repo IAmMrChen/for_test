@@ -17,7 +17,7 @@
     {
       "path": "pages/rewards/index",
       "style": {
-        "navigationBarTitleText": "奖品",
+        "navigationBarTitleText": "奖励",
         "navigationStyle": "custom"
       }
     },
@@ -31,7 +31,7 @@
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "亲子积分助手",
+    "navigationBarTitleText": "亲子积分",
     "navigationBarBackgroundColor": "#F8F8F8",
     "backgroundColor": "#F8F8F8"
   },
@@ -43,13 +43,13 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "任务",
+        "text": "首页",
         "iconPath": "static/logo.png",
         "selectedIconPath": "static/logo.png"
       },
       {
         "pagePath": "pages/rewards/index",
-        "text": "奖品",
+        "text": "奖励",
         "iconPath": "static/logo.png",
         "selectedIconPath": "static/logo.png"
       },
