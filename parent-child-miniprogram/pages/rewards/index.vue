@@ -1,62 +1,394 @@
 <template>
   <view class="container">
     <view class="header">
-      <text class="title">奖励</text>
-      <text class="subtitle">完成任务后，用积分兑换喜欢的奖励</text>
+      <view>
+        <text class="title">奖励</text>
+        <text class="subtitle">{{ familyName }}</text>
+      </view>
+      <view class="summary-pill">
+        <text class="summary-label">{{ isChild ? '当前积分' : '待发放' }}</text>
+        <text class="summary-value">{{ isChild ? currentPoints : appliedRecords.length }}</text>
+      </view>
     </view>
 
-    <view class="empty-state">
-      <text class="empty-title">奖励列表将在下一轮接入</text>
-      <text class="empty-desc">后续会支持查看奖励、申请兑换和确认领取。</text>
+    <view v-if="loading" class="state-block">
+      <text>正在加载奖励...</text>
+    </view>
+
+    <view v-else class="content">
+      <view v-if="isChild && deliveredRecords.length > 0" class="section">
+        <view class="section-title">待确认收到</view>
+        <view class="record-card" v-for="record in deliveredRecords" :key="record.id">
+          <view class="record-main">
+            <text class="record-title">{{ record.rewardName }}</text>
+            <text class="record-meta">消耗 {{ record.pointsCost }} 积分</text>
+          </view>
+          <button class="primary-btn" size="mini" @click="receive(record)">确认收到</button>
+        </view>
+      </view>
+
+      <view v-if="isParentRole" class="section">
+        <view class="section-title">待发放申请</view>
+        <view v-if="appliedRecords.length === 0" class="state-block compact">
+          <text>当前没有待发放奖励</text>
+        </view>
+        <view v-else class="record-card" v-for="record in appliedRecords" :key="record.id">
+          <view class="record-main">
+            <text class="record-title">{{ record.nickname || '孩子' }} 申请 {{ record.rewardName }}</text>
+            <text class="record-meta">{{ record.pointsCost }} 积分 · {{ formatTime(record.applyTime) }}</text>
+          </view>
+          <view class="record-actions">
+            <button class="plain-btn" size="mini" @click="reject(record)">驳回</button>
+            <button class="primary-btn" size="mini" @click="deliver(record)">发放</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="section">
+        <view class="section-title">可兑换奖励</view>
+        <view v-if="rewards.length === 0" class="state-block compact">
+          <text>暂无可兑换奖励</text>
+        </view>
+        <view v-else class="reward-list">
+          <view class="reward-card" v-for="reward in rewardRows" :key="reward.id">
+            <view class="reward-info">
+              <text class="reward-name">{{ reward.name }}</text>
+              <text class="reward-stock">{{ stockText(reward.stock) }}</text>
+            </view>
+            <view class="reward-side">
+              <text class="points">{{ reward.pointsCost }} 积分</text>
+              <button
+                v-if="isChild"
+                class="exchange-btn"
+                size="mini"
+                :class="reward.actionStatus"
+                :disabled="reward.actionStatus !== 'available'"
+                @click="apply(reward)"
+              >
+                {{ rewardButtonText(reward) }}
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
 
+<script setup>
+import { computed, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+
+import { ensureDemoLogin } from '../../api/auth.js'
+import { getDashboardSummary } from '../../api/dashboard.js'
+import {
+  applyReward,
+  deliverReward,
+  listRewardRecords,
+  listRewards,
+  receiveReward,
+  rejectReward
+} from '../../api/reward.js'
+import { getCurrentFamily } from '../../utils/storage.js'
+
+const loading = ref(false)
+const currentFamily = ref(null)
+const summary = ref({})
+const rewards = ref([])
+const appliedRecords = ref([])
+const deliveredRecords = ref([])
+
+const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
+const isChild = computed(() => roleType.value === 'CHILD')
+const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleType.value))
+const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '当前家庭')
+const currentPoints = computed(() => summary.value.currentPoints || 0)
+
+const rewardRows = computed(() => {
+  return rewards.value.map((reward) => {
+    const pending = appliedRecords.value.find((record) => record.rewardId === reward.id)
+    if (pending) {
+      return { ...reward, actionStatus: 'applied' }
+    }
+    if (reward.stock === 0) {
+      return { ...reward, actionStatus: 'soldout' }
+    }
+    if (currentPoints.value < reward.pointsCost) {
+      return { ...reward, actionStatus: 'insufficient' }
+    }
+    return { ...reward, actionStatus: 'available' }
+  })
+})
+
+onShow(() => {
+  loadRewardPage()
+})
+
+async function loadRewardPage(retried = false) {
+  const family = getCurrentFamily()
+  if (!family) {
+    uni.reLaunch({ url: '/pages/family-select/index' })
+    return
+  }
+
+  currentFamily.value = family
+  loading.value = true
+  try {
+    await ensureDemoLogin()
+    const familyId = family.familyId
+    const [summaryData, rewardList] = await Promise.all([
+      getDashboardSummary(familyId),
+      listRewards(familyId)
+    ])
+
+    summary.value = summaryData || {}
+    rewards.value = rewardList || []
+
+    if (summary.value.roleType === 'CHILD') {
+      const [applied, delivered] = await Promise.all([
+        listRewardRecords({ familyId, status: 'APPLIED' }),
+        listRewardRecords({ familyId, status: 'DELIVERED' })
+      ])
+      appliedRecords.value = applied || []
+      deliveredRecords.value = delivered || []
+      return
+    }
+
+    if (isParentRole.value) {
+      appliedRecords.value = (await listRewardRecords({ familyId, status: 'APPLIED' })) || []
+      deliveredRecords.value = []
+      return
+    }
+
+    appliedRecords.value = []
+    deliveredRecords.value = []
+  } catch (error) {
+    if (error.statusCode !== 401 || retried) {
+      throw error
+    }
+    await ensureDemoLogin(true)
+    await loadRewardPage(true)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function apply(reward) {
+  await applyReward({
+    familyId: currentFamily.value.familyId,
+    rewardId: reward.id
+  })
+  uni.showToast({ title: '已申请兑换', icon: 'success' })
+  await loadRewardPage()
+}
+
+async function deliver(record) {
+  await deliverReward({ recordId: record.id })
+  uni.showToast({ title: '已发放', icon: 'success' })
+  await loadRewardPage()
+}
+
+async function reject(record) {
+  await rejectReward({ recordId: record.id })
+  uni.showToast({ title: '已驳回', icon: 'success' })
+  await loadRewardPage()
+}
+
+async function receive(record) {
+  await receiveReward({ recordId: record.id })
+  uni.showToast({ title: '已确认收到', icon: 'success' })
+  await loadRewardPage()
+}
+
+function rewardButtonText(reward) {
+  const map = {
+    available: '兑换',
+    applied: '待发放',
+    insufficient: '积分不足',
+    soldout: '已兑完'
+  }
+  return map[reward.actionStatus] || '兑换'
+}
+
+function stockText(stock) {
+  if (stock < 0) {
+    return '不限库存'
+  }
+  if (stock === 0) {
+    return '已兑完'
+  }
+  return `剩余 ${stock} 份`
+}
+
+function formatTime(value) {
+  if (!value) {
+    return ''
+  }
+  const date = new Date(value)
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  const hour = `${date.getHours()}`.padStart(2, '0')
+  const minute = `${date.getMinutes()}`.padStart(2, '0')
+  return `${month}-${day} ${hour}:${minute}`
+}
+</script>
+
 <style>
 .container {
+  background: #f5f7fa;
   min-height: 100vh;
   padding: 48px 20px 24px;
-  background: #f5f7fa;
-  text-align: center;
 }
 
 .header {
+  align-items: flex-start;
   display: flex;
-  flex-direction: column;
-  margin-bottom: 36px;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.title,
+.subtitle {
+  display: block;
 }
 
 .title {
   color: #1f2937;
-  display: block;
   font-size: 26px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.subtitle {
+.subtitle,
+.summary-label,
+.record-meta,
+.reward-stock {
   color: #64748b;
-  font-size: 14px;
+  font-size: 12px;
 }
 
-.empty-state {
+.summary-pill {
+  align-items: flex-end;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 40px 20px;
+  min-width: 78px;
+  padding: 10px 12px;
 }
 
-.empty-title {
+.summary-value {
+  color: #2563eb;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.content,
+.section,
+.reward-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.content,
+.section {
+  gap: 18px;
+}
+
+.section-title {
   color: #1f2937;
   font-size: 16px;
   font-weight: 700;
 }
 
-.empty-desc {
+.reward-list,
+.record-card + .record-card {
+  gap: 12px;
+}
+
+.reward-card,
+.record-card,
+.state-block {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.reward-card,
+.record-card {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.reward-info,
+.reward-side,
+.record-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.reward-side {
+  align-items: flex-end;
+}
+
+.reward-name,
+.record-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.points {
+  color: #f59e0b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.record-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.exchange-btn,
+.primary-btn,
+.plain-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  min-width: 72px;
+  padding: 0 12px;
+}
+
+.exchange-btn,
+.primary-btn {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+}
+
+.plain-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.exchange-btn.applied,
+.exchange-btn.insufficient,
+.exchange-btn.soldout {
+  background: #e5e7eb;
+  color: #64748b;
+}
+
+.state-block {
   color: #64748b;
   font-size: 14px;
-  line-height: 20px;
+  text-align: center;
+}
+
+.state-block.compact {
+  padding: 20px 16px;
 }
 </style>
