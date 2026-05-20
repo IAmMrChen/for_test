@@ -37,3 +37,11 @@ export function auditTask(data) {
     data
   })
 }
+
+export function createTask(data) {
+  return request({
+    url: '/api/task/create',
+    method: 'POST',
+    data
+  })
+}

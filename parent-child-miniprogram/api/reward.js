@@ -45,3 +45,11 @@ export function receiveReward(data) {
     data
   })
 }
+
+export function createReward(data) {
+  return request({
+    url: '/api/reward/create',
+    method: 'POST',
+    data
+  })
+}
