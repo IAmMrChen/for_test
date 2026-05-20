@@ -44,6 +44,38 @@
         </view>
       </view>
 
+      <view v-if="isParentRole" class="create-panel">
+        <view class="create-header">
+          <view>
+            <text class="create-title">新建奖励</text>
+            <text class="create-subtitle">创建孩子可以用积分兑换的奖励</text>
+          </view>
+          <button v-if="!showRewardForm" class="small-primary-btn" size="mini" @click="openRewardForm">新建</button>
+        </view>
+
+        <view v-if="showRewardForm" class="create-form">
+          <view class="form-row">
+            <text class="form-label">奖励名称</text>
+            <input v-model.trim="rewardForm.name" class="form-input" placeholder="例如：周末电影票" />
+          </view>
+          <view class="form-row">
+            <text class="form-label">所需积分</text>
+            <input v-model="rewardForm.pointsCost" class="form-input" type="number" placeholder="30" />
+          </view>
+          <view class="form-row">
+            <text class="form-label">库存</text>
+            <input v-model="rewardForm.stock" class="form-input" type="number" placeholder="0" />
+            <text class="form-hint">库存填 0 表示不限库存</text>
+          </view>
+          <view class="form-actions">
+            <button class="plain-action-btn" size="mini" :disabled="submittingReward" @click="cancelRewardForm">取消</button>
+            <button class="primary-action-btn" size="mini" :disabled="submittingReward" @click="createNewReward">
+              {{ submittingReward ? '创建中' : '确认创建' }}
+            </button>
+          </view>
+        </view>
+      </view>
+
       <view class="section">
         <view class="section-title">可兑换奖励</view>
         <view v-if="rewards.length === 0" class="state-block compact">
@@ -83,6 +115,7 @@ import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import {
   applyReward,
+  createReward,
   deliverReward,
   listRewardRecords,
   listRewards,
@@ -97,6 +130,9 @@ const summary = ref({})
 const rewards = ref([])
 const appliedRecords = ref([])
 const deliveredRecords = ref([])
+const showRewardForm = ref(false)
+const submittingReward = ref(false)
+const rewardForm = ref(defaultRewardForm())
 
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
 const isChild = computed(() => roleType.value === 'CHILD')
@@ -198,6 +234,87 @@ async function receive(record) {
   await receiveReward({ recordId: record.id })
   uni.showToast({ title: '已确认收到', icon: 'success' })
   await loadRewardPage()
+}
+
+function defaultRewardForm() {
+  return {
+    name: '',
+    pointsCost: 30,
+    stock: 0
+  }
+}
+
+function resetRewardForm() {
+  rewardForm.value = defaultRewardForm()
+}
+
+function openRewardForm() {
+  showRewardForm.value = true
+}
+
+function cancelRewardForm() {
+  showRewardForm.value = false
+  resetRewardForm()
+}
+
+function normalizePositiveInteger(value) {
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function normalizeNonNegativeInteger(value) {
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : -1
+}
+
+function validateRewardForm() {
+  const name = rewardForm.value.name.trim()
+  const pointsCost = normalizePositiveInteger(rewardForm.value.pointsCost)
+  const stock = normalizeNonNegativeInteger(rewardForm.value.stock)
+
+  if (!name) {
+    uni.showToast({ title: '请填写奖励名称', icon: 'none' })
+    return null
+  }
+  if (pointsCost <= 0) {
+    uni.showToast({ title: '所需积分必须大于 0', icon: 'none' })
+    return null
+  }
+  if (stock < 0) {
+    uni.showToast({ title: '库存不能小于 0', icon: 'none' })
+    return null
+  }
+
+  return {
+    name,
+    pointsCost,
+    stock
+  }
+}
+
+async function createNewReward() {
+  if (submittingReward.value) {
+    return
+  }
+
+  const payload = validateRewardForm()
+  if (!payload) {
+    return
+  }
+
+  submittingReward.value = true
+  try {
+    await createReward({
+      ...payload,
+      familyId: currentFamily.value.familyId
+    })
+    uni.showToast({ title: '奖励已创建', icon: 'success' })
+    showRewardForm.value = false
+    resetRewardForm()
+    await loadRewardPage()
+  } finally {
+    submittingReward.value = false
+  }
 }
 
 function rewardButtonText(reward) {
@@ -390,5 +507,99 @@ function formatTime(value) {
 
 .state-block.compact {
   padding: 20px 16px;
+}
+
+.create-panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.create-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.create-title,
+.create-subtitle {
+  display: block;
+}
+
+.create-title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.create-subtitle,
+.form-hint {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.small-primary-btn,
+.primary-action-btn {
+  background: #2563eb;
+  border: none;
+  color: #fff;
+}
+
+.small-primary-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-input {
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #111827;
+  font-size: 14px;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.plain-action-btn,
+.primary-action-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.plain-action-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
 }
 </style>
