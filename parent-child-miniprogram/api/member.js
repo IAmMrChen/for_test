@@ -6,3 +6,11 @@ export function listMembers(familyId) {
     data: { familyId }
   })
 }
+
+export function createVirtualChild(data) {
+  return request({
+    url: '/api/member/createVirtualChild',
+    method: 'POST',
+    data
+  })
+}
