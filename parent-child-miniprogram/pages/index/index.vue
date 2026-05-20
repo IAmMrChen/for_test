@@ -65,6 +65,48 @@
         </view>
       </view>
 
+      <view v-if="isParentRole" class="create-panel">
+        <view class="create-header">
+          <view>
+            <text class="create-title">发布任务</text>
+            <text class="create-subtitle">给孩子增加一个可以领取的任务</text>
+          </view>
+          <button v-if="!showTaskForm" class="small-primary-btn" size="mini" @click="openTaskForm">发布</button>
+        </view>
+
+        <view v-if="showTaskForm" class="create-form">
+          <view class="form-row">
+            <text class="form-label">任务标题</text>
+            <input v-model.trim="taskForm.title" class="form-input" placeholder="例如：阅读 30 分钟" />
+          </view>
+          <view class="form-row">
+            <text class="form-label">奖励积分</text>
+            <input v-model="taskForm.points" class="form-input" type="number" placeholder="10" />
+          </view>
+          <view class="form-row">
+            <text class="form-label">任务周期</text>
+            <view class="cycle-options">
+              <button
+                v-for="cycle in taskCycles"
+                :key="cycle.value"
+                class="cycle-btn"
+                :class="{ active: taskForm.cycleType === cycle.value }"
+                size="mini"
+                @click="taskForm.cycleType = cycle.value"
+              >
+                {{ cycle.label }}
+              </button>
+            </view>
+          </view>
+          <view class="form-actions">
+            <button class="plain-action-btn" size="mini" :disabled="submittingTask" @click="cancelTaskForm">取消</button>
+            <button class="primary-action-btn" size="mini" :disabled="submittingTask" @click="publishTask">
+              {{ submittingTask ? '发布中' : '确认发布' }}
+            </button>
+          </view>
+        </view>
+      </view>
+
       <view class="section-title">待办事项</view>
       <view v-if="parentPendingRecords.length === 0" class="state-block">
         <text>当前没有待审核任务</text>
@@ -96,7 +138,7 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
-import { auditTask, claimTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
+import { auditTask, claimTask, createTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -106,6 +148,15 @@ const tasks = ref([])
 const claimedRecords = ref([])
 const pendingRecords = ref([])
 const parentPendingRecords = ref([])
+const showTaskForm = ref(false)
+const submittingTask = ref(false)
+const taskForm = ref(defaultTaskForm())
+
+const taskCycles = [
+  { label: '一次性', value: 'ONCE' },
+  { label: '每日', value: 'DAILY' },
+  { label: '每周', value: 'WEEKLY' }
+]
 
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
 const isChild = computed(() => roleType.value === 'CHILD')
@@ -201,6 +252,82 @@ async function audit(record, approved) {
     icon: 'success'
   })
   await loadHome()
+}
+
+function defaultTaskForm() {
+  return {
+    title: '',
+    points: 10,
+    cycleType: 'DAILY'
+  }
+}
+
+function resetTaskForm() {
+  taskForm.value = defaultTaskForm()
+}
+
+function openTaskForm() {
+  showTaskForm.value = true
+}
+
+function cancelTaskForm() {
+  showTaskForm.value = false
+  resetTaskForm()
+}
+
+function normalizePositiveInteger(value) {
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function validateTaskForm() {
+  const title = taskForm.value.title.trim()
+  const points = normalizePositiveInteger(taskForm.value.points)
+  const cycleType = taskForm.value.cycleType
+
+  if (!title) {
+    uni.showToast({ title: '请填写任务标题', icon: 'none' })
+    return null
+  }
+  if (points <= 0) {
+    uni.showToast({ title: '奖励积分必须大于 0', icon: 'none' })
+    return null
+  }
+  if (!taskCycles.some((cycle) => cycle.value === cycleType)) {
+    uni.showToast({ title: '请选择任务周期', icon: 'none' })
+    return null
+  }
+
+  return {
+    title,
+    points,
+    cycleType
+  }
+}
+
+async function publishTask() {
+  if (submittingTask.value) {
+    return
+  }
+
+  const payload = validateTaskForm()
+  if (!payload) {
+    return
+  }
+
+  submittingTask.value = true
+  try {
+    await createTask({
+      ...payload,
+      familyId: currentFamily.value.familyId
+    })
+    uni.showToast({ title: '任务已发布', icon: 'success' })
+    showTaskForm.value = false
+    resetTaskForm()
+    await loadHome()
+  } finally {
+    submittingTask.value = false
+  }
 }
 
 function taskButtonText(task) {
@@ -444,5 +571,121 @@ function formatTime(value) {
   color: #64748b;
   font-size: 14px;
   text-align: center;
+}
+
+.create-panel {
+  background: #fff;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  padding: 16px;
+}
+
+.create-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.create-title,
+.create-subtitle {
+  display: block;
+}
+
+.create-title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.create-subtitle {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.small-primary-btn,
+.primary-action-btn {
+  background: #2563eb;
+  border: none;
+  color: #fff;
+}
+
+.small-primary-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-input {
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #111827;
+  font-size: 14px;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.cycle-options {
+  display: flex;
+  gap: 8px;
+}
+
+.cycle-btn {
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.cycle-btn.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.plain-action-btn,
+.primary-action-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.plain-action-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
 }
 </style>
