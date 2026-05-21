@@ -107,6 +107,51 @@
         </view>
       </view>
 
+      <view v-if="isParentRole" class="proxy-panel">
+        <view class="proxy-header">
+          <view>
+            <text class="proxy-title">代孩子完成任务</text>
+            <text class="proxy-subtitle">仅支持虚拟孩子</text>
+          </view>
+          <text v-if="selectedVirtualChild" class="proxy-points">{{ selectedVirtualChild.currentPoints || 0 }} 积分</text>
+        </view>
+
+        <view v-if="virtualChildren.length === 0" class="state-block compact">
+          <text>暂无虚拟孩子，请先在个人页创建</text>
+        </view>
+        <view v-else class="proxy-content">
+          <view class="child-options">
+            <button
+              v-for="child in virtualChildren"
+              :key="child.id"
+              class="child-option-btn"
+              :class="{ active: selectedVirtualChildId === child.id }"
+              size="mini"
+              @click="selectVirtualChild(child.id)"
+            >
+              {{ child.nickname }}
+            </button>
+          </view>
+
+          <view class="proxy-task-list">
+            <view class="task-item" v-for="task in proxyTaskRows" :key="task.id">
+              <view class="task-info">
+                <view class="task-title">{{ task.title }}</view>
+                <view class="task-reward">+{{ task.points }} 积分</view>
+              </view>
+              <button
+                class="action-btn"
+                :class="task.viewStatus"
+                :disabled="task.viewStatus === 'pending' || submittingProxyTaskId === task.id"
+                @click="handleProxyTaskAction(task)"
+              >
+                {{ proxyTaskButtonText(task) }}
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
+
       <view class="section-title">待办事项</view>
       <view v-if="parentPendingRecords.length === 0" class="state-block">
         <text>当前没有待审核任务</text>
@@ -138,6 +183,7 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
+import { listMembers } from '../../api/member.js'
 import { auditTask, claimTask, createTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
@@ -148,6 +194,10 @@ const tasks = ref([])
 const claimedRecords = ref([])
 const pendingRecords = ref([])
 const parentPendingRecords = ref([])
+const members = ref([])
+const proxyClaimedRecords = ref([])
+const selectedVirtualChildId = ref(0)
+const submittingProxyTaskId = ref(0)
 const showTaskForm = ref(false)
 const submittingTask = ref(false)
 const taskForm = ref(defaultTaskForm())
@@ -171,6 +221,33 @@ const taskRows = computed(() => {
   return tasks.value.map((task) => {
     const claimed = claimedRecords.value.find((record) => record.taskId === task.id)
     const pending = pendingRecords.value.find((record) => record.taskId === task.id)
+    if (pending) {
+      return { ...task, viewStatus: 'pending', record: pending }
+    }
+    if (claimed) {
+      return { ...task, viewStatus: 'claimed', record: claimed }
+    }
+    return { ...task, viewStatus: 'claimable', record: null }
+  })
+})
+
+const virtualChildren = computed(() => {
+  return members.value.filter((member) => member.roleType === 'CHILD' && member.isVirtual)
+})
+
+const selectedVirtualChild = computed(() => {
+  return virtualChildren.value.find((member) => member.id === selectedVirtualChildId.value) || null
+})
+
+const proxyTaskRows = computed(() => {
+  const child = selectedVirtualChild.value
+  if (!child) {
+    return []
+  }
+
+  return tasks.value.map((task) => {
+    const claimed = proxyClaimedRecords.value.find((record) => record.taskId === task.id && record.memberId === child.id)
+    const pending = parentPendingRecords.value.find((record) => record.taskId === task.id && record.memberId === child.id)
     if (pending) {
       return { ...task, viewStatus: 'pending', record: pending }
     }
@@ -211,8 +288,19 @@ async function loadHome(retried = false) {
       claimedRecords.value = claimed || []
       pendingRecords.value = pending || []
       parentPendingRecords.value = []
+      members.value = []
+      proxyClaimedRecords.value = []
+      selectedVirtualChildId.value = 0
     } else if (isParentRole.value) {
-      parentPendingRecords.value = (await listTaskRecords({ familyId, status: 'PENDING' })) || []
+      const [memberList, claimed, pending] = await Promise.all([
+        listMembers(familyId),
+        listTaskRecords({ familyId, status: 'CLAIMED' }),
+        listTaskRecords({ familyId, status: 'PENDING' })
+      ])
+      members.value = memberList || []
+      proxyClaimedRecords.value = claimed || []
+      parentPendingRecords.value = pending || []
+      syncSelectedVirtualChild()
       claimedRecords.value = []
       pendingRecords.value = []
     }
@@ -328,6 +416,50 @@ async function publishTask() {
   } finally {
     submittingTask.value = false
   }
+}
+
+function syncSelectedVirtualChild() {
+  if (virtualChildren.value.some((child) => child.id === selectedVirtualChildId.value)) {
+    return
+  }
+  selectedVirtualChildId.value = virtualChildren.value[0]?.id || 0
+}
+
+function selectVirtualChild(memberId) {
+  selectedVirtualChildId.value = memberId
+}
+
+async function handleProxyTaskAction(task) {
+  const child = selectedVirtualChild.value
+  if (!child) {
+    uni.showToast({ title: '请先选择孩子', icon: 'none' })
+    return
+  }
+
+  submittingProxyTaskId.value = task.id
+  try {
+    const familyId = currentFamily.value.familyId
+    if (task.viewStatus === 'claimable') {
+      await claimTask({ familyId, taskId: task.id, memberId: child.id })
+      uni.showToast({ title: '已为孩子领取任务', icon: 'success' })
+      await loadHome()
+      return
+    }
+    if (task.viewStatus === 'claimed') {
+      await submitTask({ familyId, recordId: task.record.id, memberId: child.id })
+      uni.showToast({ title: '已提交审核', icon: 'success' })
+      await loadHome()
+    }
+  } finally {
+    submittingProxyTaskId.value = 0
+  }
+}
+
+function proxyTaskButtonText(task) {
+  if (submittingProxyTaskId.value === task.id) {
+    return '处理中'
+  }
+  return taskButtonText(task)
 }
 
 function taskButtonText(task) {
@@ -687,5 +819,76 @@ function formatTime(value) {
   background: #fff;
   border: 1px solid #cbd5e1;
   color: #475569;
+}
+
+.proxy-panel {
+  background: #fff;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  padding: 16px;
+}
+
+.proxy-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.proxy-title,
+.proxy-subtitle {
+  display: block;
+}
+
+.proxy-title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.proxy-subtitle {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.proxy-points {
+  color: #f59e0b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.proxy-content,
+.proxy-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.child-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.child-option-btn {
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.child-option-btn.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.state-block.compact {
+  padding: 20px 16px;
 }
 </style>
