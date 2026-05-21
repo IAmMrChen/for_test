@@ -27,6 +27,29 @@
     <view v-else class="content">
       <view class="section">
         <view class="section-title">家庭成员</view>
+        <view v-if="isParentRole" class="manage-panel">
+          <view class="manage-header">
+            <view>
+              <text class="manage-title">虚拟孩子</text>
+              <text class="manage-subtitle">先为没有微信账号的孩子建立积分身份</text>
+            </view>
+            <button v-if="!showVirtualChildForm" class="small-primary-btn" size="mini" @click="openVirtualChildForm">创建</button>
+          </view>
+
+          <view v-if="showVirtualChildForm" class="manage-form">
+            <view class="form-row">
+              <text class="form-label">孩子昵称</text>
+              <input v-model.trim="virtualChildForm.nickname" class="form-input" placeholder="例如：小宝" />
+            </view>
+            <view class="form-actions">
+              <button class="plain-action-btn" size="mini" :disabled="submittingVirtualChild" @click="cancelVirtualChildForm">取消</button>
+              <button class="primary-action-btn" size="mini" :disabled="submittingVirtualChild" @click="submitVirtualChild">
+                {{ submittingVirtualChild ? '创建中' : '确认创建' }}
+              </button>
+            </view>
+          </view>
+        </view>
+
         <view v-if="members.length === 0" class="state-block compact">
           <text>暂无家庭成员</text>
         </view>
@@ -75,7 +98,7 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
-import { listMembers } from '../../api/member.js'
+import { createVirtualChild, listMembers } from '../../api/member.js'
 import { listPointLogs } from '../../api/point.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
@@ -84,10 +107,14 @@ const currentFamily = ref(null)
 const summary = ref({})
 const members = ref([])
 const pointLogs = ref([])
+const showVirtualChildForm = ref(false)
+const submittingVirtualChild = ref(false)
+const virtualChildForm = ref(defaultVirtualChildForm())
 
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '未选择家庭')
 const nickname = computed(() => summary.value.nickname || '我的')
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
+const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleType.value))
 const currentPoints = computed(() => summary.value.currentPoints || 0)
 const totalEarnedPoints = computed(() => summary.value.totalEarnedPoints || 0)
 const avatarText = computed(() => (nickname.value || '我').slice(0, 1))
@@ -124,6 +151,47 @@ async function loadProfile(retried = false) {
     await loadProfile(true)
   } finally {
     loading.value = false
+  }
+}
+
+function defaultVirtualChildForm() {
+  return {
+    nickname: ''
+  }
+}
+
+function openVirtualChildForm() {
+  showVirtualChildForm.value = true
+}
+
+function cancelVirtualChildForm() {
+  showVirtualChildForm.value = false
+  virtualChildForm.value = defaultVirtualChildForm()
+}
+
+async function submitVirtualChild() {
+  if (submittingVirtualChild.value) {
+    return
+  }
+
+  const nickname = virtualChildForm.value.nickname.trim()
+  if (!nickname) {
+    uni.showToast({ title: '请填写孩子昵称', icon: 'none' })
+    return
+  }
+
+  submittingVirtualChild.value = true
+  try {
+    await createVirtualChild({
+      familyId: currentFamily.value.familyId,
+      nickname
+    })
+    uni.showToast({ title: '虚拟孩子已创建', icon: 'success' })
+    showVirtualChildForm.value = false
+    virtualChildForm.value = defaultVirtualChildForm()
+    await loadProfile()
+  } finally {
+    submittingVirtualChild.value = false
   }
 }
 
@@ -370,5 +438,98 @@ function formatTime(value) {
 
 .state-block.compact {
   padding: 20px 16px;
+}
+
+.manage-panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.manage-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.manage-title,
+.manage-subtitle {
+  display: block;
+}
+
+.manage-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.manage-subtitle {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.manage-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.small-primary-btn,
+.primary-action-btn {
+  background: #2563eb;
+  border: none;
+  color: #fff;
+}
+
+.small-primary-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-input {
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #111827;
+  font-size: 14px;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.plain-action-btn,
+.primary-action-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.plain-action-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
 }
 </style>
