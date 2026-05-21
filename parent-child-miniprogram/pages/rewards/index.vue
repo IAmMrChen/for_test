@@ -76,6 +76,55 @@
         </view>
       </view>
 
+      <view v-if="isParentRole" class="proxy-panel">
+        <view class="proxy-header">
+          <view>
+            <text class="proxy-title">代孩子兑换奖励</text>
+            <text class="proxy-subtitle">仅支持虚拟孩子</text>
+          </view>
+          <text v-if="selectedRewardVirtualChild" class="proxy-points">{{ selectedRewardVirtualChild.currentPoints || 0 }} 积分</text>
+        </view>
+
+        <view v-if="virtualChildren.length === 0" class="state-block compact">
+          <text>暂无虚拟孩子，请先在个人页创建</text>
+        </view>
+        <view v-else class="proxy-content">
+          <view class="child-options">
+            <button
+              v-for="child in virtualChildren"
+              :key="child.id"
+              class="child-option-btn"
+              :class="{ active: selectedRewardVirtualChildId === child.id }"
+              size="mini"
+              @click="selectRewardVirtualChild(child.id)"
+            >
+              {{ child.nickname }}
+            </button>
+          </view>
+
+          <view class="reward-list">
+            <view class="reward-card" v-for="reward in proxyRewardRows" :key="reward.id">
+              <view class="reward-info">
+                <text class="reward-name">{{ reward.name }}</text>
+                <text class="reward-stock">{{ stockText(reward.stock) }}</text>
+              </view>
+              <view class="reward-side">
+                <text class="points">{{ reward.pointsCost }} 积分</text>
+                <button
+                  class="exchange-btn"
+                  size="mini"
+                  :class="reward.actionStatus"
+                  :disabled="reward.actionStatus !== 'available' || submittingProxyRewardId === reward.id"
+                  @click="applyProxyReward(reward)"
+                >
+                  {{ proxyRewardButtonText(reward) }}
+                </button>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
       <view class="section">
         <view class="section-title">可兑换奖励</view>
         <view v-if="rewards.length === 0" class="state-block compact">
@@ -122,6 +171,7 @@ import {
   receiveReward,
   rejectReward
 } from '../../api/reward.js'
+import { listMembers } from '../../api/member.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -133,6 +183,9 @@ const deliveredRecords = ref([])
 const showRewardForm = ref(false)
 const submittingReward = ref(false)
 const rewardForm = ref(defaultRewardForm())
+const members = ref([])
+const selectedRewardVirtualChildId = ref(0)
+const submittingProxyRewardId = ref(0)
 
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
 const isChild = computed(() => roleType.value === 'CHILD')
@@ -150,6 +203,35 @@ const rewardRows = computed(() => {
       return { ...reward, actionStatus: 'soldout' }
     }
     if (currentPoints.value < reward.pointsCost) {
+      return { ...reward, actionStatus: 'insufficient' }
+    }
+    return { ...reward, actionStatus: 'available' }
+  })
+})
+
+const virtualChildren = computed(() => {
+  return members.value.filter((member) => member.roleType === 'CHILD' && member.isVirtual)
+})
+
+const selectedRewardVirtualChild = computed(() => {
+  return virtualChildren.value.find((member) => member.id === selectedRewardVirtualChildId.value) || null
+})
+
+const proxyRewardRows = computed(() => {
+  const child = selectedRewardVirtualChild.value
+  if (!child) {
+    return []
+  }
+
+  return rewards.value.map((reward) => {
+    const pending = appliedRecords.value.find((record) => record.rewardId === reward.id && record.memberId === child.id)
+    if (pending) {
+      return { ...reward, actionStatus: 'applied' }
+    }
+    if (reward.stock === 0) {
+      return { ...reward, actionStatus: 'soldout' }
+    }
+    if ((child.currentPoints || 0) < reward.pointsCost) {
       return { ...reward, actionStatus: 'insufficient' }
     }
     return { ...reward, actionStatus: 'available' }
@@ -187,17 +269,27 @@ async function loadRewardPage(retried = false) {
       ])
       appliedRecords.value = applied || []
       deliveredRecords.value = delivered || []
+      members.value = []
+      selectedRewardVirtualChildId.value = 0
       return
     }
 
     if (isParentRole.value) {
-      appliedRecords.value = (await listRewardRecords({ familyId, status: 'APPLIED' })) || []
+      const [applied, memberList] = await Promise.all([
+        listRewardRecords({ familyId, status: 'APPLIED' }),
+        listMembers(familyId)
+      ])
+      appliedRecords.value = applied || []
+      members.value = memberList || []
       deliveredRecords.value = []
+      syncSelectedRewardVirtualChild()
       return
     }
 
     appliedRecords.value = []
     deliveredRecords.value = []
+    members.value = []
+    selectedRewardVirtualChildId.value = 0
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
       throw error
@@ -315,6 +407,48 @@ async function createNewReward() {
   } finally {
     submittingReward.value = false
   }
+}
+
+function syncSelectedRewardVirtualChild() {
+  if (virtualChildren.value.some((child) => child.id === selectedRewardVirtualChildId.value)) {
+    return
+  }
+  selectedRewardVirtualChildId.value = virtualChildren.value[0]?.id || 0
+}
+
+function selectRewardVirtualChild(memberId) {
+  selectedRewardVirtualChildId.value = memberId
+}
+
+async function applyProxyReward(reward) {
+  const child = selectedRewardVirtualChild.value
+  if (!child) {
+    uni.showToast({ title: '请先选择孩子', icon: 'none' })
+    return
+  }
+
+  submittingProxyRewardId.value = reward.id
+  try {
+    await applyReward({
+      familyId: currentFamily.value.familyId,
+      rewardId: reward.id,
+      memberId: child.id
+    })
+    uni.showToast({ title: '已为孩子申请兑换', icon: 'success' })
+    await loadRewardPage()
+  } finally {
+    submittingProxyRewardId.value = 0
+  }
+}
+
+function proxyRewardButtonText(reward) {
+  if (submittingProxyRewardId.value === reward.id) {
+    return '处理中'
+  }
+  if (reward.actionStatus === 'available') {
+    return '代兑换'
+  }
+  return rewardButtonText(reward)
 }
 
 function rewardButtonText(reward) {
@@ -601,5 +735,70 @@ function formatTime(value) {
   background: #fff;
   border: 1px solid #cbd5e1;
   color: #475569;
+}
+
+.proxy-panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.proxy-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.proxy-title,
+.proxy-subtitle {
+  display: block;
+}
+
+.proxy-title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.proxy-subtitle {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.proxy-points {
+  color: #f59e0b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.proxy-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.child-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.child-option-btn {
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.child-option-btn.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
 }
 </style>
