@@ -31,6 +31,26 @@ func TestIntegrationFamilyMemberInviteFlow(t *testing.T) {
 		cleanupIntegrationFamily(t, familyId)
 	})
 
+	defaultTasks := TaskService.ListTasks(ownerUserId, familyId)
+	if len(defaultTasks) != len(defaultTaskPresets()) {
+		t.Fatalf("default task count = %d, want %d", len(defaultTasks), len(defaultTaskPresets()))
+	}
+	for _, task := range defaultTasks {
+		if task.CreatedBy != family.Member.Id {
+			t.Fatalf("default task createdBy = %d, want owner member %d", task.CreatedBy, family.Member.Id)
+		}
+	}
+
+	defaultRewards := RewardService.ListRewards(ownerUserId, familyId)
+	if len(defaultRewards) != len(defaultRewardPresets()) {
+		t.Fatalf("default reward count = %d, want %d", len(defaultRewards), len(defaultRewardPresets()))
+	}
+	for _, reward := range defaultRewards {
+		if reward.CreatedBy != family.Member.Id {
+			t.Fatalf("default reward createdBy = %d, want owner member %d", reward.CreatedBy, family.Member.Id)
+		}
+	}
+
 	if family.Family.CreatorId != ownerUserId {
 		t.Fatalf("creatorId = %d, want %d", family.Family.CreatorId, ownerUserId)
 	}
