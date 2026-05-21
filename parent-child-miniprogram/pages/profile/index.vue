@@ -50,6 +50,47 @@
           </view>
         </view>
 
+        <view v-if="isParentRole" class="manage-panel">
+          <view class="manage-header">
+            <view>
+              <text class="manage-title">邀请成员</text>
+              <text class="manage-subtitle">创建一个带角色的邀请码</text>
+            </view>
+            <button v-if="!showInviteCreateForm" class="small-primary-btn" size="mini" @click="openInviteCreateForm">邀请</button>
+          </view>
+
+          <view v-if="showInviteCreateForm" class="manage-form">
+            <view class="form-row">
+              <text class="form-label">加入角色</text>
+              <view class="role-options">
+                <button
+                  v-for="role in inviteRoleOptions"
+                  :key="role.value"
+                  class="role-option-btn"
+                  :class="{ active: inviteCreateForm.targetRole === role.value }"
+                  size="mini"
+                  @click="inviteCreateForm.targetRole = role.value"
+                >
+                  {{ role.label }}
+                </button>
+              </view>
+            </view>
+            <view class="form-actions">
+              <button class="plain-action-btn" size="mini" :disabled="submittingInviteCreate" @click="cancelInviteCreateForm">取消</button>
+              <button class="primary-action-btn" size="mini" :disabled="submittingInviteCreate" @click="submitCreateInvite">
+                {{ submittingInviteCreate ? '生成中' : '生成邀请码' }}
+              </button>
+            </view>
+          </view>
+
+          <view v-if="latestInvite" class="invite-result">
+            <text class="invite-label">邀请码</text>
+            <text class="invite-token">{{ latestInvite.token }}</text>
+            <text class="invite-expire">有效期至 {{ formatTime(latestInvite.expiresAt) }}</text>
+            <button class="copy-btn" size="mini" @click="copyInviteToken">复制邀请码</button>
+          </view>
+        </view>
+
         <view v-if="members.length === 0" class="state-block compact">
           <text>暂无家庭成员</text>
         </view>
@@ -98,6 +139,7 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
+import { createInvite } from '../../api/invite.js'
 import { createVirtualChild, listMembers } from '../../api/member.js'
 import { listPointLogs } from '../../api/point.js'
 import { getCurrentFamily } from '../../utils/storage.js'
@@ -110,6 +152,10 @@ const pointLogs = ref([])
 const showVirtualChildForm = ref(false)
 const submittingVirtualChild = ref(false)
 const virtualChildForm = ref(defaultVirtualChildForm())
+const showInviteCreateForm = ref(false)
+const submittingInviteCreate = ref(false)
+const inviteCreateForm = ref(defaultInviteCreateForm())
+const latestInvite = ref(null)
 
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '未选择家庭')
 const nickname = computed(() => summary.value.nickname || '我的')
@@ -118,6 +164,22 @@ const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleTy
 const currentPoints = computed(() => summary.value.currentPoints || 0)
 const totalEarnedPoints = computed(() => summary.value.totalEarnedPoints || 0)
 const avatarText = computed(() => (nickname.value || '我').slice(0, 1))
+const inviteRoleOptions = computed(() => {
+  if (roleType.value === 'OWNER') {
+    return [
+      { label: '管理员', value: 'ADMIN' },
+      { label: '家长', value: 'PARENT' },
+      { label: '孩子', value: 'CHILD' }
+    ]
+  }
+  if (['ADMIN', 'PARENT'].includes(roleType.value)) {
+    return [
+      { label: '家长', value: 'PARENT' },
+      { label: '孩子', value: 'CHILD' }
+    ]
+  }
+  return []
+})
 
 onShow(() => {
   loadProfile()
@@ -193,6 +255,65 @@ async function submitVirtualChild() {
   } finally {
     submittingVirtualChild.value = false
   }
+}
+
+function defaultInviteCreateForm() {
+  return {
+    targetRole: 'CHILD'
+  }
+}
+
+function openInviteCreateForm() {
+  showInviteCreateForm.value = true
+  latestInvite.value = null
+  if (!inviteRoleOptions.value.some((role) => role.value === inviteCreateForm.value.targetRole)) {
+    inviteCreateForm.value.targetRole = inviteRoleOptions.value[0]?.value || ''
+  }
+}
+
+function cancelInviteCreateForm() {
+  showInviteCreateForm.value = false
+  inviteCreateForm.value = defaultInviteCreateForm()
+}
+
+async function submitCreateInvite() {
+  if (submittingInviteCreate.value) {
+    return
+  }
+
+  const targetRole = inviteCreateForm.value.targetRole
+  if (!inviteRoleOptions.value.some((role) => role.value === targetRole)) {
+    uni.showToast({ title: '请选择邀请角色', icon: 'none' })
+    return
+  }
+
+  submittingInviteCreate.value = true
+  try {
+    latestInvite.value = await createInvite({
+      familyId: currentFamily.value.familyId,
+      targetRole
+    })
+    showInviteCreateForm.value = false
+    uni.showToast({ title: '邀请码已生成', icon: 'success' })
+  } finally {
+    submittingInviteCreate.value = false
+  }
+}
+
+function copyInviteToken() {
+  if (!latestInvite.value?.token) {
+    return
+  }
+
+  uni.setClipboardData({
+    data: latestInvite.value.token,
+    success() {
+      uni.showToast({ title: '邀请码已复制', icon: 'success' })
+    },
+    fail() {
+      uni.showToast({ title: '复制失败，请手动复制', icon: 'none' })
+    }
+  })
 }
 
 function switchFamily() {
@@ -531,5 +652,62 @@ function formatTime(value) {
   background: #fff;
   border: 1px solid #cbd5e1;
   color: #475569;
+}
+
+.role-options {
+  display: flex;
+  gap: 8px;
+}
+
+.role-option-btn {
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.role-option-btn.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.invite-result {
+  background: #f8fafc;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.invite-label,
+.invite-expire {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.invite-token {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.copy-btn {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 4px 0 0;
+  padding: 0 14px;
 }
 </style>
