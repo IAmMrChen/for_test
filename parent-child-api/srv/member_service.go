@@ -3,6 +3,7 @@ package srv
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"parent-child-api/model"
 	"parent-child-api/resx"
@@ -115,6 +116,17 @@ func virtualChildMemberInsertArgs(req model.VirtualChildCreateRequest, nickname 
 	}
 }
 
+func virtualChildBindInviteInsertArgs(familyId, childMemberId, inviterMemberId int64, token string, expiresAt time.Time) []any {
+	return []any{
+		familyId,
+		childMemberId,
+		inviterMemberId,
+		token,
+		model.FamilyInviteStatusActive,
+		expiresAt,
+	}
+}
+
 func (x memberService) CreateVirtualChild(operatorUserId int64, req model.VirtualChildCreateRequest) model.FamilyMember {
 	nickname := strings.TrimSpace(req.Nickname)
 	if nickname == "" {
@@ -161,4 +173,157 @@ func (x memberService) CreateVirtualChild(operatorUserId int64, req model.Virtua
 		IsVirtual:         true,
 		Status:            model.FamilyMemberStatusActive,
 	}
+}
+
+func (x memberService) CreateVirtualChildBindInvite(operatorUserId int64, req model.VirtualChildBindInviteCreateRequest) model.VirtualChildBindInvite {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.MemberId == 0 {
+		panic(fmt.Errorf("member id is required"))
+	}
+
+	operator := x.RequireParentRole(operatorUserId, req.FamilyId)
+	child := loadActiveVirtualChildForBind(resx.Db.Main, req.FamilyId, req.MemberId)
+	token := newInviteToken()
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+
+	tran := resx.Db.Main.MustCreateTransactionEx()
+	defer tran.MustClose()
+
+	const insertInviteSql = `
+		INSERT INTO family_child_bind_invites(
+			family_id
+			, child_member_id
+			, inviter_member_id
+			, token
+			, status
+			, expires_at
+		)
+		VALUES (@p1, @p2, @p3, @p4, @p5, @p6)
+	`
+	tran.MustExecute(insertInviteSql, virtualChildBindInviteInsertArgs(req.FamilyId, child.Id, operator.Id, token, expiresAt)...)
+
+	inviteIdValue, ok := tran.MustScalarInt("SELECT LAST_INSERT_ID()")
+	if !ok || inviteIdValue == nil {
+		panic(fmt.Errorf("failed to load created child bind invite id"))
+	}
+	inviteId := int64(*inviteIdValue)
+
+	tran.MustCommit()
+
+	return model.VirtualChildBindInvite{
+		Id:              inviteId,
+		FamilyId:        req.FamilyId,
+		ChildMemberId:   child.Id,
+		InviterMemberId: operator.Id,
+		Token:           token,
+		Status:          model.FamilyInviteStatusActive,
+		ExpiresAt:       expiresAt,
+	}
+}
+
+func (x memberService) AcceptVirtualChildBindInvite(userId int64, token string) model.FamilyMember {
+	tran := resx.Db.Main.MustCreateTransactionEx()
+	defer tran.MustClose()
+
+	invite := loadActiveChildBindInviteFrom(tran, token)
+	if invite.ExpiresAt.Before(time.Now()) {
+		panic("bind invite expired")
+	}
+	if loadActiveFamilyMember(tran, userId, invite.FamilyId) != nil {
+		panic("user already has a family identity")
+	}
+
+	child := loadActiveVirtualChildForBind(tran, invite.FamilyId, invite.ChildMemberId)
+
+	affected := tran.MustExecute(
+		claimChildBindInviteSql(),
+		model.FamilyInviteStatusAccepted,
+		userId,
+		invite.Id,
+		model.FamilyInviteStatusActive,
+	)
+	if affected != 1 {
+		panic("bind invite has been changed")
+	}
+
+	affected = tran.MustExecute(`
+		UPDATE family_members
+		SET user_id=@p1, is_virtual=0
+		WHERE id=@p2
+			AND family_id=@p3
+			AND role_type=@p4
+			AND status=@p5
+			AND is_virtual=1
+			AND user_id IS NULL
+	`, userId, child.Id, invite.FamilyId, model.FamilyRoleChild, model.FamilyMemberStatusActive)
+	if affected != 1 {
+		panic("virtual child not found")
+	}
+
+	tran.MustCommit()
+
+	child.UserId = &userId
+	child.IsVirtual = false
+	return child
+}
+
+func loadActiveVirtualChildForBind(db structGetter, familyId, memberId int64) model.FamilyMember {
+	const sql = `
+		SELECT id
+			, family_id
+			, user_id
+			, role_type
+			, nickname
+			, current_points
+			, total_earned_points
+			, is_virtual
+			, status
+		FROM family_members
+		WHERE id=@p1
+			AND family_id=@p2
+			AND role_type=@p3
+			AND status=@p4
+			AND is_virtual=1
+			AND user_id IS NULL
+	`
+
+	member := &model.FamilyMember{}
+	ok := db.MustGetStruct(member, sql, memberId, familyId, model.FamilyRoleChild, model.FamilyMemberStatusActive)
+	if !ok {
+		panic("virtual child not found")
+	}
+	return *member
+}
+
+func loadActiveChildBindInviteFrom(db structGetter, token string) model.VirtualChildBindInvite {
+	const sql = `
+		SELECT id
+			, family_id
+			, child_member_id
+			, inviter_member_id
+			, token
+			, status
+			, expires_at
+			, accepted_by_user_id
+			, accepted_at
+		FROM family_child_bind_invites
+		WHERE token=@p1 AND status=@p2
+	`
+
+	invite := &model.VirtualChildBindInvite{}
+	ok := db.MustGetStruct(invite, sql, token, model.FamilyInviteStatusActive)
+	if !ok {
+		panic("bind invite not found")
+	}
+	return *invite
+}
+
+func claimChildBindInviteSql() string {
+	return `
+		UPDATE family_child_bind_invites
+		SET status=@p1, accepted_by_user_id=@p2, accepted_at=NOW()
+		WHERE id=@p3 AND status=@p4 AND expires_at>=NOW()
+	`
 }

@@ -32,6 +32,8 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	mux.HandleFunc("POST /api/family/create", recoverRoute(apix.WithAuth(jwtSecret, familyApi.Create)))
 	mux.HandleFunc("GET /api/family/list", recoverRoute(apix.WithAuth(jwtSecret, familyApi.List)))
 	mux.HandleFunc("POST /api/member/createVirtualChild", recoverRoute(apix.WithAuth(jwtSecret, memberApi.CreateVirtualChild)))
+	mux.HandleFunc("POST /api/member/createVirtualChildBindInvite", recoverRoute(apix.WithAuth(jwtSecret, memberApi.CreateVirtualChildBindInvite)))
+	mux.HandleFunc("POST /api/member/acceptVirtualChildBindInvite", recoverRoute(apix.WithAuth(jwtSecret, memberApi.AcceptVirtualChildBindInvite)))
 	mux.HandleFunc("GET /api/member/list", recoverRoute(apix.WithAuth(jwtSecret, memberApi.List)))
 	mux.HandleFunc("POST /api/invite/create", recoverRoute(apix.WithAuth(jwtSecret, inviteApi.Create)))
 	mux.HandleFunc("POST /api/invite/accept", recoverRoute(apix.WithAuth(jwtSecret, inviteApi.Accept)))

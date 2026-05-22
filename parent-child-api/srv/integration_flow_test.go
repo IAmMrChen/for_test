@@ -111,6 +111,7 @@ func cleanupIntegrationFamily(t *testing.T, familyId int64) {
 	resx.Db.Main.MustExecute("DELETE FROM rewards WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM task_records WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM tasks WHERE family_id=@p1", familyId)
+	resx.Db.Main.MustExecute("DELETE FROM family_child_bind_invites WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM family_invites WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM family_members WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM families WHERE id=@p1", familyId)
@@ -153,6 +154,28 @@ func ensureIntegrationSchema(t *testing.T) {
 				PRIMARY KEY (id),
 				UNIQUE KEY uk_token (token),
 				KEY idx_family_status (family_id, status)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		`)
+	}
+
+	if !integrationTableExists("family_child_bind_invites") {
+		resx.Db.Main.MustExecute(`
+			CREATE TABLE family_child_bind_invites (
+				id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+				family_id BIGINT UNSIGNED NOT NULL,
+				child_member_id BIGINT UNSIGNED NOT NULL,
+				inviter_member_id BIGINT UNSIGNED NOT NULL,
+				token VARCHAR(128) NOT NULL,
+				status ENUM('ACTIVE', 'ACCEPTED', 'EXPIRED', 'CANCELED') NOT NULL DEFAULT 'ACTIVE',
+				expires_at DATETIME NOT NULL,
+				accepted_by_user_id BIGINT UNSIGNED DEFAULT NULL,
+				accepted_at DATETIME DEFAULT NULL,
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				PRIMARY KEY (id),
+				UNIQUE KEY uk_token (token),
+				KEY idx_family_status (family_id, status),
+				KEY idx_child_status (child_member_id, status)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 		`)
 	}

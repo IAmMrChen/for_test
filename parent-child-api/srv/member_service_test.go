@@ -3,6 +3,7 @@ package srv
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"parent-child-api/model"
 	"parent-child-api/resx"
@@ -42,6 +43,32 @@ func TestVirtualChildMemberInsertArgsUsesOperatorUserIdAsCreatedBy(t *testing.T)
 
 	if args[6] != int64(123) {
 		t.Fatalf("created_by arg = %v, want operator user id 123", args[6])
+	}
+}
+
+func TestMemberServiceCreateVirtualChildBindInviteRejectsMissingMember(t *testing.T) {
+	resx.Db = nil
+
+	mustPanicWith(t, "member id is required", func() {
+		MemberService.CreateVirtualChildBindInvite(1, model.VirtualChildBindInviteCreateRequest{FamilyId: 1})
+	})
+}
+
+func TestVirtualChildBindInviteInsertArgs(t *testing.T) {
+	expiresAt := time.Date(2026, 5, 22, 10, 0, 0, 0, time.UTC)
+	args := virtualChildBindInviteInsertArgs(9, 10, 11, "token", expiresAt)
+
+	if args[0] != int64(9) || args[1] != int64(10) || args[2] != int64(11) {
+		t.Fatalf("ids args = %+v", args[:3])
+	}
+	if args[3] != "token" {
+		t.Fatalf("token arg = %v, want token", args[3])
+	}
+	if args[4] != model.FamilyInviteStatusActive {
+		t.Fatalf("status arg = %v, want ACTIVE", args[4])
+	}
+	if args[5] != expiresAt {
+		t.Fatalf("expires arg = %v, want %v", args[5], expiresAt)
 	}
 }
 

@@ -23,6 +23,26 @@ func (x MemberApi) CreateVirtualChild(w http.ResponseWriter, r *http.Request, to
 	apix.WriteData(w, srv.MemberService.CreateVirtualChild(token.UserId, req))
 }
 
+func (x MemberApi) CreateVirtualChildBindInvite(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.VirtualChildBindInviteCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	apix.WriteData(w, srv.MemberService.CreateVirtualChildBindInvite(token.UserId, req))
+}
+
+func (x MemberApi) AcceptVirtualChildBindInvite(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.VirtualChildBindInviteAcceptRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+
+	apix.WriteData(w, srv.MemberService.AcceptVirtualChildBindInvite(token.UserId, req.Token))
+}
+
 func (x MemberApi) List(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
 	familyId, err := strconv.ParseInt(r.URL.Query().Get("familyId"), 10, 64)
 	if err != nil || familyId == 0 {

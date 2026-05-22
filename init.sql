@@ -159,4 +159,22 @@ CREATE TABLE IF NOT EXISTS `family_invites` (
   KEY `idx_family_status` (`family_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='家庭邀请表';
 
+CREATE TABLE IF NOT EXISTS `family_child_bind_invites` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键',
+  `family_id` BIGINT UNSIGNED NOT NULL COMMENT '家庭ID',
+  `child_member_id` BIGINT UNSIGNED NOT NULL COMMENT '待绑定的虚拟孩子成员ID',
+  `inviter_member_id` BIGINT UNSIGNED NOT NULL COMMENT '邀请人成员ID',
+  `token` VARCHAR(128) NOT NULL COMMENT '绑定邀请令牌',
+  `status` ENUM('ACTIVE', 'ACCEPTED', 'EXPIRED', 'CANCELED') NOT NULL DEFAULT 'ACTIVE' COMMENT '邀请状态',
+  `expires_at` DATETIME NOT NULL COMMENT '过期时间',
+  `accepted_by_user_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '接受绑定的用户ID',
+  `accepted_at` DATETIME DEFAULT NULL COMMENT '接受时间',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_token` (`token`),
+  KEY `idx_family_status` (`family_id`, `status`),
+  KEY `idx_child_status` (`child_member_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='虚拟孩子绑定邀请表';
+
 SET FOREIGN_KEY_CHECKS = 1;
