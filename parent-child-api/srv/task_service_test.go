@@ -63,6 +63,26 @@ func TestNormalizeTaskUpdateRequest(t *testing.T) {
 	}
 }
 
+func TestTaskRecordCycleCondition(t *testing.T) {
+	cases := []struct {
+		name      string
+		cycleType model.TaskCycleType
+		want      string
+	}{
+		{name: "once", cycleType: model.TaskCycleTypeOnce, want: ""},
+		{name: "daily", cycleType: model.TaskCycleTypeDaily, want: "DATE(created_at)=CURRENT_DATE()"},
+		{name: "weekly", cycleType: model.TaskCycleTypeWeekly, want: "YEARWEEK(created_at, 1)=YEARWEEK(CURRENT_DATE(), 1)"},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := taskRecordCycleCondition(tt.cycleType); got != tt.want {
+				t.Fatalf("condition = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestResolveSubmitMemberRejectsMissingFamily(t *testing.T) {
 	resx.Db = nil
 

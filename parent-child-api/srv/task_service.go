@@ -142,7 +142,7 @@ func (x taskService) ClaimTask(operatorUserId int64, req model.TaskClaimRequest)
 
 	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
 	task := x.loadActiveTask(req.FamilyId, req.TaskId)
-	x.requireNoOpenTaskRecord(req.FamilyId, task.Id, target.Id)
+	x.requireNoEffectiveTaskRecord(req.FamilyId, task, target.Id)
 
 	const sql = `
 		INSERT INTO task_records(family_id, task_id, member_id, status)
@@ -177,7 +177,7 @@ func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitReques
 
 	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
 	task := x.loadActiveTask(req.FamilyId, req.TaskId)
-	x.requireNoOpenTaskRecord(req.FamilyId, task.Id, target.Id)
+	x.requireNoEffectiveTaskRecord(req.FamilyId, task, target.Id)
 	submitRemark := strings.TrimSpace(req.SubmitRemark)
 
 	const sql = `
@@ -261,16 +261,39 @@ func (x taskService) resolveTaskTargetMember(operatorUserId, familyId, memberId 
 	return target
 }
 
-func (x taskService) requireNoOpenTaskRecord(familyId, taskId, memberId int64) {
-	const sql = `
+func taskRecordCycleCondition(cycleType model.TaskCycleType) string {
+	switch cycleType {
+	case model.TaskCycleTypeDaily:
+		return "DATE(created_at)=CURRENT_DATE()"
+	case model.TaskCycleTypeWeekly:
+		return "YEARWEEK(created_at, 1)=YEARWEEK(CURRENT_DATE(), 1)"
+	default:
+		return ""
+	}
+}
+
+func (x taskService) requireNoEffectiveTaskRecord(familyId int64, task model.Task, memberId int64) {
+	sql := `
 		SELECT COUNT(*)
 		FROM task_records
 		WHERE family_id=@p1
 			AND task_id=@p2
 			AND member_id=@p3
-			AND status IN (@p4, @p5)
+			AND status IN (@p4, @p5, @p6)
 	`
-	count, ok := resx.Db.Main.MustScalarInt(sql, familyId, taskId, memberId, model.TaskRecordStatusClaimed, model.TaskRecordStatusPending)
+	args := []any{
+		familyId,
+		task.Id,
+		memberId,
+		model.TaskRecordStatusClaimed,
+		model.TaskRecordStatusPending,
+		model.TaskRecordStatusApproved,
+	}
+	if condition := taskRecordCycleCondition(task.CycleType); condition != "" {
+		sql += " AND " + condition
+	}
+
+	count, ok := resx.Db.Main.MustScalarInt(sql, args...)
 	if ok && count != nil && *count > 0 {
 		panic(fmt.Errorf("task record already exists"))
 	}

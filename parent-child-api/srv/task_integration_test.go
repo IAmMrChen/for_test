@@ -177,3 +177,106 @@ func TestIntegrationTaskUpdateAndArchiveFlow(t *testing.T) {
 		})
 	})
 }
+
+func TestIntegrationDailyTaskRejectsSameDayEffectiveRecord(t *testing.T) {
+	if os.Getenv("PARENT_CHILD_DB_INTEGRATION") != "1" {
+		t.Skip("set PARENT_CHILD_DB_INTEGRATION=1 to run database integration flow")
+	}
+
+	resx.InitDb(resx.Conf.DB)
+	ensureIntegrationSchema(t)
+
+	seed := time.Now().UnixMilli()
+	ownerUserId := seed + 500
+	childUserId := seed + 501
+
+	family := FamilyService.CreateFamily(ownerUserId, model.FamilyCreateRequest{
+		Name:     fmt.Sprintf("daily-task-family-%d", seed),
+		Nickname: "owner",
+	})
+	familyId := family.Family.Id
+	t.Cleanup(func() {
+		cleanupIntegrationFamily(t, familyId)
+	})
+
+	invite := InviteService.CreateInvite(ownerUserId, model.FamilyInviteCreateRequest{
+		FamilyId:   familyId,
+		TargetRole: model.FamilyRoleChild,
+	})
+	InviteService.AcceptInvite(childUserId, invite.Token)
+
+	task := TaskService.CreateTask(ownerUserId, model.TaskCreateRequest{
+		FamilyId:  familyId,
+		Title:     "Daily reading",
+		Points:    3,
+		CycleType: model.TaskCycleTypeDaily,
+	})
+
+	first := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	TaskService.AuditTask(ownerUserId, model.TaskAuditRequest{
+		RecordId: first.Id,
+		Approved: true,
+	})
+
+	mustPanicWith(t, "task record already exists", func() {
+		TaskService.ClaimTask(childUserId, model.TaskClaimRequest{
+			FamilyId: familyId,
+			TaskId:   task.Id,
+		})
+	})
+}
+
+func TestIntegrationDailyTaskAllowsRetryAfterRejected(t *testing.T) {
+	if os.Getenv("PARENT_CHILD_DB_INTEGRATION") != "1" {
+		t.Skip("set PARENT_CHILD_DB_INTEGRATION=1 to run database integration flow")
+	}
+
+	resx.InitDb(resx.Conf.DB)
+	ensureIntegrationSchema(t)
+
+	seed := time.Now().UnixMilli()
+	ownerUserId := seed + 510
+	childUserId := seed + 511
+
+	family := FamilyService.CreateFamily(ownerUserId, model.FamilyCreateRequest{
+		Name:     fmt.Sprintf("daily-task-retry-family-%d", seed),
+		Nickname: "owner",
+	})
+	familyId := family.Family.Id
+	t.Cleanup(func() {
+		cleanupIntegrationFamily(t, familyId)
+	})
+
+	invite := InviteService.CreateInvite(ownerUserId, model.FamilyInviteCreateRequest{
+		FamilyId:   familyId,
+		TargetRole: model.FamilyRoleChild,
+	})
+	InviteService.AcceptInvite(childUserId, invite.Token)
+
+	task := TaskService.CreateTask(ownerUserId, model.TaskCreateRequest{
+		FamilyId:  familyId,
+		Title:     "Daily retry",
+		Points:    3,
+		CycleType: model.TaskCycleTypeDaily,
+	})
+
+	first := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	TaskService.AuditTask(ownerUserId, model.TaskAuditRequest{
+		RecordId: first.Id,
+		Approved: false,
+	})
+
+	second := TaskService.ClaimTask(childUserId, model.TaskClaimRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	if second.Status != model.TaskRecordStatusClaimed {
+		t.Fatalf("second status = %s, want CLAIMED", second.Status)
+	}
+}
