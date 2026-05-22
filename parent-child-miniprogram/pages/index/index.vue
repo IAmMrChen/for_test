@@ -27,6 +27,19 @@
         </view>
       </view>
 
+      <view v-if="childDeliveredRewardRecords.length > 0" class="section-block">
+        <view class="section-title">待确认奖励</view>
+        <view class="reward-todo-list">
+          <view class="reward-todo-item" v-for="record in childDeliveredRewardRecords" :key="record.id">
+            <view class="reward-todo-info">
+              <text class="reward-todo-title">{{ record.rewardName }}</text>
+              <text class="reward-todo-meta">消耗 {{ record.pointsCost }} 积分 · {{ formatTime(record.operateTime || record.applyTime) }}</text>
+            </view>
+            <button class="primary-action-btn" size="mini" @click="receiveDeliveredReward(record)">确认收到</button>
+          </view>
+        </view>
+      </view>
+
       <view class="section-title">可执行任务</view>
       <view v-if="taskRows.length === 0" class="state-block">
         <text>暂无可执行任务</text>
@@ -195,6 +208,23 @@
           </view>
         </view>
       </view>
+
+      <view class="section-title reward-section-title">待发放奖励</view>
+      <view v-if="parentAppliedRewardRecords.length === 0" class="state-block">
+        <text>当前没有待发放奖励</text>
+      </view>
+      <view v-else class="reward-todo-list">
+        <view class="reward-todo-item" v-for="record in parentAppliedRewardRecords" :key="record.id">
+          <view class="reward-todo-info">
+            <text class="reward-todo-title">{{ record.nickname || '孩子' }} 申请 {{ record.rewardName }}</text>
+            <text class="reward-todo-meta">{{ record.pointsCost }} 积分 · {{ formatTime(record.applyTime) }}</text>
+          </view>
+          <view class="audit-actions">
+            <button class="btn-reject" size="mini" plain @click="operateReward(record, false)">拒绝</button>
+            <button class="btn-approve" size="mini" type="primary" @click="operateReward(record, true)">发放</button>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -206,6 +236,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { listMembers } from '../../api/member.js'
+import { deliverReward, listRewardRecords, receiveReward, rejectReward } from '../../api/reward.js'
 import { archiveTask, auditTask, claimTask, createTask, listTaskRecords, listTasks, submitTask, updateTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
@@ -216,6 +247,8 @@ const tasks = ref([])
 const claimedRecords = ref([])
 const pendingRecords = ref([])
 const parentPendingRecords = ref([])
+const parentAppliedRewardRecords = ref([])
+const childDeliveredRewardRecords = ref([])
 const members = ref([])
 const proxyClaimedRecords = ref([])
 const selectedVirtualChildId = ref(0)
@@ -304,25 +337,31 @@ async function loadHome(retried = false) {
     tasks.value = taskList || []
 
     if (summary.value.roleType === 'CHILD') {
-      const [claimed, pending] = await Promise.all([
+      const [claimed, pending, deliveredRewards] = await Promise.all([
         listTaskRecords({ familyId, status: 'CLAIMED' }),
-        listTaskRecords({ familyId, status: 'PENDING' })
+        listTaskRecords({ familyId, status: 'PENDING' }),
+        listRewardRecords({ familyId, status: 'DELIVERED' })
       ])
       claimedRecords.value = claimed || []
       pendingRecords.value = pending || []
+      childDeliveredRewardRecords.value = deliveredRewards || []
       parentPendingRecords.value = []
+      parentAppliedRewardRecords.value = []
       members.value = []
       proxyClaimedRecords.value = []
       selectedVirtualChildId.value = 0
     } else if (isParentRole.value) {
-      const [memberList, claimed, pending] = await Promise.all([
+      const [memberList, claimed, pending, appliedRewards] = await Promise.all([
         listMembers(familyId),
         listTaskRecords({ familyId, status: 'CLAIMED' }),
-        listTaskRecords({ familyId, status: 'PENDING' })
+        listTaskRecords({ familyId, status: 'PENDING' }),
+        listRewardRecords({ familyId, status: 'APPLIED' })
       ])
       members.value = memberList || []
       proxyClaimedRecords.value = claimed || []
       parentPendingRecords.value = pending || []
+      parentAppliedRewardRecords.value = appliedRewards || []
+      childDeliveredRewardRecords.value = []
       syncSelectedVirtualChild()
       claimedRecords.value = []
       pendingRecords.value = []
@@ -362,6 +401,25 @@ async function audit(record, approved) {
     title: approved ? '已通过' : '已驳回',
     icon: 'success'
   })
+  await loadHome()
+}
+
+async function operateReward(record, delivered) {
+  if (delivered) {
+    await deliverReward({ recordId: record.id })
+  } else {
+    await rejectReward({ recordId: record.id })
+  }
+  uni.showToast({
+    title: delivered ? '已发放' : '已拒绝',
+    icon: 'success'
+  })
+  await loadHome()
+}
+
+async function receiveDeliveredReward(record) {
+  await receiveReward({ recordId: record.id })
+  uni.showToast({ title: '已确认收到', icon: 'success' })
   await loadHome()
 }
 
@@ -625,6 +683,14 @@ function formatTime(value) {
   margin-bottom: 12px;
 }
 
+.section-block {
+  margin-bottom: 24px;
+}
+
+.reward-section-title {
+  margin-top: 24px;
+}
+
 .summary-row,
 .dashboard-stats {
   display: flex;
@@ -671,7 +737,8 @@ function formatTime(value) {
 }
 
 .task-list,
-.audit-list {
+.audit-list,
+.reward-todo-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -679,13 +746,15 @@ function formatTime(value) {
 
 .task-item,
 .audit-item,
+.reward-todo-item,
 .state-block {
   background: #fff;
   border-radius: 10px;
   padding: 16px;
 }
 
-.task-item {
+.task-item,
+.reward-todo-item {
   align-items: center;
   display: flex;
   justify-content: space-between;
@@ -705,6 +774,23 @@ function formatTime(value) {
 
 .task-reward {
   color: #f59e0b;
+  font-size: 12px;
+}
+
+.reward-todo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.reward-todo-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.reward-todo-meta {
+  color: #64748b;
   font-size: 12px;
 }
 
