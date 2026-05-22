@@ -29,6 +29,19 @@ func normalizeTaskCreateRequest(req model.TaskCreateRequest) model.TaskCreateReq
 	return req
 }
 
+func normalizeTaskUpdateRequest(req model.TaskUpdateRequest) model.TaskUpdateRequest {
+	normalized := normalizeTaskCreateRequest(model.TaskCreateRequest{
+		FamilyId:  req.FamilyId,
+		Title:     req.Title,
+		Points:    req.Points,
+		CycleType: req.CycleType,
+	})
+	req.Title = normalized.Title
+	req.Points = normalized.Points
+	req.CycleType = normalized.CycleType
+	return req
+}
+
 func (x taskService) CreateTask(operatorUserId int64, req model.TaskCreateRequest) model.Task {
 	req = normalizeTaskCreateRequest(req)
 	operator := MemberService.RequireParentRole(operatorUserId, req.FamilyId)
@@ -53,6 +66,49 @@ func (x taskService) CreateTask(operatorUserId int64, req model.TaskCreateReques
 		Status:    model.TaskStatusActive,
 		CreatedBy: operator.Id,
 	}
+}
+
+func (x taskService) UpdateTask(operatorUserId int64, req model.TaskUpdateRequest) model.Task {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.TaskId == 0 {
+		panic(fmt.Errorf("task id is required"))
+	}
+	req = normalizeTaskUpdateRequest(req)
+	MemberService.RequireParentRole(operatorUserId, req.FamilyId)
+
+	affected := resx.Db.Main.MustExecute(`
+		UPDATE tasks
+		SET title=@p1, points=@p2, cycle_type=@p3
+		WHERE id=@p4 AND family_id=@p5 AND status=@p6
+	`, req.Title, req.Points, req.CycleType, req.TaskId, req.FamilyId, model.TaskStatusActive)
+	if affected != 1 {
+		panic(fmt.Errorf("task not found"))
+	}
+	return x.loadActiveTask(req.FamilyId, req.TaskId)
+}
+
+func (x taskService) ArchiveTask(operatorUserId int64, req model.TaskArchiveRequest) model.Task {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.TaskId == 0 {
+		panic(fmt.Errorf("task id is required"))
+	}
+	MemberService.RequireParentRole(operatorUserId, req.FamilyId)
+
+	task := x.loadActiveTask(req.FamilyId, req.TaskId)
+	affected := resx.Db.Main.MustExecute(`
+		UPDATE tasks
+		SET status=@p1
+		WHERE id=@p2 AND family_id=@p3 AND status=@p4
+	`, model.TaskStatusArchived, req.TaskId, req.FamilyId, model.TaskStatusActive)
+	if affected != 1 {
+		panic(fmt.Errorf("task not found"))
+	}
+	task.Status = model.TaskStatusArchived
+	return task
 }
 
 func (x taskService) ListTasks(userId int64, familyId int64) []model.Task {

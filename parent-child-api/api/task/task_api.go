@@ -22,6 +22,24 @@ func (x TaskApi) Create(w http.ResponseWriter, r *http.Request, token *ux.AuthTo
 	apix.WriteData(w, srv.TaskService.CreateTask(token.UserId, req))
 }
 
+func (x TaskApi) Update(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.TaskUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.TaskService.UpdateTask(token.UserId, req))
+}
+
+func (x TaskApi) Archive(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.TaskArchiveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.TaskService.ArchiveTask(token.UserId, req))
+}
+
 func (x TaskApi) List(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
 	familyId, err := strconv.ParseInt(r.URL.Query().Get("familyId"), 10, 64)
 	if err != nil || familyId == 0 {

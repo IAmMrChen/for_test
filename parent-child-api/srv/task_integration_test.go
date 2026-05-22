@@ -92,3 +92,88 @@ func TestIntegrationTaskPointsFlow(t *testing.T) {
 		t.Fatalf("point log count = %v, want 1", count)
 	}
 }
+
+func TestIntegrationTaskUpdateAndArchiveFlow(t *testing.T) {
+	if os.Getenv("PARENT_CHILD_DB_INTEGRATION") != "1" {
+		t.Skip("set PARENT_CHILD_DB_INTEGRATION=1 to run database integration flow")
+	}
+
+	resx.InitDb(resx.Conf.DB)
+	ensureIntegrationSchema(t)
+
+	seed := time.Now().UnixMilli()
+	ownerUserId := seed + 300
+	childUserId := seed + 301
+
+	family := FamilyService.CreateFamily(ownerUserId, model.FamilyCreateRequest{
+		Name:     fmt.Sprintf("task-management-family-%d", seed),
+		Nickname: "owner",
+	})
+	familyId := family.Family.Id
+	t.Cleanup(func() {
+		cleanupIntegrationFamily(t, familyId)
+	})
+
+	invite := InviteService.CreateInvite(ownerUserId, model.FamilyInviteCreateRequest{
+		FamilyId:   familyId,
+		TargetRole: model.FamilyRoleChild,
+	})
+	InviteService.AcceptInvite(childUserId, invite.Token)
+
+	task := TaskService.CreateTask(ownerUserId, model.TaskCreateRequest{
+		FamilyId:  familyId,
+		Title:     "Old task",
+		Points:    5,
+		CycleType: model.TaskCycleTypeOnce,
+	})
+
+	mustPanicWith(t, "permission denied", func() {
+		TaskService.UpdateTask(childUserId, model.TaskUpdateRequest{
+			FamilyId:  familyId,
+			TaskId:    task.Id,
+			Title:     "Child update",
+			Points:    6,
+			CycleType: model.TaskCycleTypeDaily,
+		})
+	})
+
+	updated := TaskService.UpdateTask(ownerUserId, model.TaskUpdateRequest{
+		FamilyId:  familyId,
+		TaskId:    task.Id,
+		Title:     "New task",
+		Points:    9,
+		CycleType: model.TaskCycleTypeWeekly,
+	})
+	if updated.Title != "New task" || updated.Points != 9 || updated.CycleType != model.TaskCycleTypeWeekly {
+		t.Fatalf("updated task = %+v", updated)
+	}
+
+	mustPanicWith(t, "permission denied", func() {
+		TaskService.ArchiveTask(childUserId, model.TaskArchiveRequest{
+			FamilyId: familyId,
+			TaskId:   task.Id,
+		})
+	})
+
+	archived := TaskService.ArchiveTask(ownerUserId, model.TaskArchiveRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	if archived.Status != model.TaskStatusArchived {
+		t.Fatalf("archived status = %d, want archived", archived.Status)
+	}
+
+	tasks := TaskService.ListTasks(ownerUserId, familyId)
+	for _, item := range tasks {
+		if item.Id == task.Id {
+			t.Fatalf("archived task should not be listed: %+v", item)
+		}
+	}
+
+	mustPanicWith(t, "task not found", func() {
+		TaskService.ClaimTask(childUserId, model.TaskClaimRequest{
+			FamilyId: familyId,
+			TaskId:   task.Id,
+		})
+	})
+}

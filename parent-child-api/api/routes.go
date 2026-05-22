@@ -37,6 +37,8 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	mux.HandleFunc("POST /api/invite/accept", recoverRoute(apix.WithAuth(jwtSecret, inviteApi.Accept)))
 	mux.HandleFunc("GET /api/point/logs", recoverRoute(apix.WithAuth(jwtSecret, pointApi.Logs)))
 	mux.HandleFunc("POST /api/task/create", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Create)))
+	mux.HandleFunc("POST /api/task/update", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Update)))
+	mux.HandleFunc("POST /api/task/archive", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Archive)))
 	mux.HandleFunc("GET /api/task/list", recoverRoute(apix.WithAuth(jwtSecret, taskApi.List)))
 	mux.HandleFunc("POST /api/task/claim", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Claim)))
 	mux.HandleFunc("POST /api/task/submit", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Submit)))

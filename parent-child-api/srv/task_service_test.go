@@ -43,6 +43,26 @@ func TestNormalizeTaskCreateRequest(t *testing.T) {
 	}
 }
 
+func TestNormalizeTaskUpdateRequest(t *testing.T) {
+	req := normalizeTaskUpdateRequest(model.TaskUpdateRequest{
+		FamilyId:  1,
+		TaskId:    2,
+		Title:     " Read ",
+		Points:    0,
+		CycleType: "",
+	})
+
+	if req.Title != "Read" {
+		t.Fatalf("title = %q, want Read", req.Title)
+	}
+	if req.Points != 1 {
+		t.Fatalf("points = %d, want 1", req.Points)
+	}
+	if req.CycleType != model.TaskCycleTypeOnce {
+		t.Fatalf("cycleType = %s, want ONCE", req.CycleType)
+	}
+}
+
 func TestResolveSubmitMemberRejectsMissingFamily(t *testing.T) {
 	resx.Db = nil
 
@@ -114,4 +134,20 @@ func TestTaskServiceClaimTaskRejectsMissingFamily(t *testing.T) {
 	}()
 
 	TaskService.ClaimTask(1, model.TaskClaimRequest{TaskId: 1})
+}
+
+func TestTaskServiceArchiveTaskRejectsMissingTask(t *testing.T) {
+	resx.Db = nil
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatal("ArchiveTask should panic")
+		}
+		if fmt.Sprint(v) != "task id is required" {
+			t.Fatalf("panic = %v, want task id is required", v)
+		}
+	}()
+
+	TaskService.ArchiveTask(1, model.TaskArchiveRequest{FamilyId: 1})
 }

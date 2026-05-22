@@ -63,6 +63,19 @@ type TaskCreateRequest struct {
 	CycleType TaskCycleType `json:"cycleType"`
 }
 
+type TaskUpdateRequest struct {
+	FamilyId  int64         `json:"familyId"`
+	TaskId    int64         `json:"taskId"`
+	Title     string        `json:"title"`
+	Points    int           `json:"points"`
+	CycleType TaskCycleType `json:"cycleType"`
+}
+
+type TaskArchiveRequest struct {
+	FamilyId int64 `json:"familyId"`
+	TaskId   int64 `json:"taskId"`
+}
+
 type TaskListRequest struct {
 	FamilyId int64 `json:"familyId"`
 }
