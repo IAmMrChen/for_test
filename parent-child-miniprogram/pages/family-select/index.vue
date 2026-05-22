@@ -8,6 +8,7 @@
     <view class="entry-actions">
       <button class="entry-btn primary" size="mini" @click="toggleCreateForm">创建家庭</button>
       <button class="entry-btn plain" size="mini" @click="toggleInviteForm">输入邀请码</button>
+      <button class="entry-btn plain" size="mini" @click="toggleBindForm">关联孩子</button>
     </view>
 
     <view v-if="showCreateForm" class="entry-panel">
@@ -23,6 +24,19 @@
         <button class="plain-action-btn" size="mini" :disabled="submittingFamily" @click="cancelCreateFamily">取消</button>
         <button class="primary-action-btn" size="mini" :disabled="submittingFamily" @click="submitCreateFamily">
           {{ submittingFamily ? '创建中' : '确认创建' }}
+        </button>
+      </view>
+    </view>
+
+    <view v-if="showBindForm" class="entry-panel">
+      <view class="form-row">
+        <text class="form-label">虚拟孩子绑定码</text>
+        <input v-model.trim="bindForm.token" class="form-input" placeholder="输入家长发来的绑定码" />
+      </view>
+      <view class="form-actions">
+        <button class="plain-action-btn" size="mini" :disabled="submittingBind" @click="cancelAcceptBind">取消</button>
+        <button class="primary-action-btn" size="mini" :disabled="submittingBind" @click="submitAcceptBind">
+          {{ submittingBind ? '绑定中' : '确认绑定' }}
         </button>
       </view>
     </view>
@@ -79,16 +93,20 @@ import { onShow } from '@dcloudio/uni-app'
 import { ensureDemoLogin } from '../../api/auth.js'
 import { createFamily, listFamilies } from '../../api/family.js'
 import { acceptInvite } from '../../api/invite.js'
+import { acceptVirtualChildBindInvite } from '../../api/member.js'
 import { setCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
 const families = ref([])
 const showCreateForm = ref(false)
 const showInviteForm = ref(false)
+const showBindForm = ref(false)
 const submittingFamily = ref(false)
 const submittingInvite = ref(false)
+const submittingBind = ref(false)
 const familyForm = ref(defaultFamilyForm())
 const inviteForm = ref(defaultInviteForm())
+const bindForm = ref(defaultBindForm())
 
 onShow(() => {
   loadFamilies()
@@ -123,10 +141,17 @@ function defaultInviteForm() {
   }
 }
 
+function defaultBindForm() {
+  return {
+    token: ''
+  }
+}
+
 function toggleCreateForm() {
   showCreateForm.value = !showCreateForm.value
   if (showCreateForm.value) {
     showInviteForm.value = false
+    showBindForm.value = false
   }
 }
 
@@ -134,6 +159,15 @@ function toggleInviteForm() {
   showInviteForm.value = !showInviteForm.value
   if (showInviteForm.value) {
     showCreateForm.value = false
+    showBindForm.value = false
+  }
+}
+
+function toggleBindForm() {
+  showBindForm.value = !showBindForm.value
+  if (showBindForm.value) {
+    showCreateForm.value = false
+    showInviteForm.value = false
   }
 }
 
@@ -145,6 +179,11 @@ function cancelCreateFamily() {
 function cancelAcceptInvite() {
   showInviteForm.value = false
   inviteForm.value = defaultInviteForm()
+}
+
+function cancelAcceptBind() {
+  showBindForm.value = false
+  bindForm.value = defaultBindForm()
 }
 
 function familyFromCreateResponse(response) {
@@ -207,6 +246,35 @@ async function submitAcceptInvite() {
     uni.switchTab({ url: '/pages/index/index' })
   } finally {
     submittingInvite.value = false
+  }
+}
+
+async function submitAcceptBind() {
+  if (submittingBind.value) {
+    return
+  }
+
+  const token = bindForm.value.token.trim()
+  if (!token) {
+    uni.showToast({ title: '请填写绑定码', icon: 'none' })
+    return
+  }
+
+  submittingBind.value = true
+  try {
+    const member = await acceptVirtualChildBindInvite({ token })
+    const nextFamilies = (await listFamilies()) || []
+    families.value = nextFamilies
+    const family = nextFamilies.find((item) => item.familyId === member.familyId)
+    if (!family) {
+      uni.showToast({ title: '已绑定，请重新加载家庭', icon: 'none' })
+      return
+    }
+    setCurrentFamily(family)
+    uni.showToast({ title: '已绑定孩子账号', icon: 'success' })
+    uni.switchTab({ url: '/pages/index/index' })
+  } finally {
+    submittingBind.value = false
   }
 }
 

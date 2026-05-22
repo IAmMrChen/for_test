@@ -106,8 +106,23 @@
             <view class="member-points">
               <text class="member-score">{{ member.currentPoints || 0 }}</text>
               <text class="member-score-label">当前积分</text>
+              <button
+                v-if="isParentRole && member.isVirtual"
+                class="link-action-btn"
+                size="mini"
+                @click="createBindInvite(member)"
+              >
+                邀请关联
+              </button>
             </view>
           </view>
+        </view>
+
+        <view v-if="latestBindInvite" class="invite-result">
+          <text class="invite-label">虚拟孩子绑定码</text>
+          <text class="invite-token">{{ latestBindInvite.token }}</text>
+          <text class="invite-expire">有效期至 {{ formatTime(latestBindInvite.expiresAt) }}</text>
+          <button class="copy-btn" size="mini" @click="copyBindInviteToken">复制绑定码</button>
         </view>
       </view>
 
@@ -140,7 +155,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { createInvite } from '../../api/invite.js'
-import { createVirtualChild, listMembers } from '../../api/member.js'
+import { createVirtualChild, createVirtualChildBindInvite, listMembers } from '../../api/member.js'
 import { listPointLogs } from '../../api/point.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
@@ -156,6 +171,7 @@ const showInviteCreateForm = ref(false)
 const submittingInviteCreate = ref(false)
 const inviteCreateForm = ref(defaultInviteCreateForm())
 const latestInvite = ref(null)
+const latestBindInvite = ref(null)
 
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '未选择家庭')
 const nickname = computed(() => summary.value.nickname || '我的')
@@ -309,6 +325,30 @@ function copyInviteToken() {
     data: latestInvite.value.token,
     success() {
       uni.showToast({ title: '邀请码已复制', icon: 'success' })
+    },
+    fail() {
+      uni.showToast({ title: '复制失败，请手动复制', icon: 'none' })
+    }
+  })
+}
+
+async function createBindInvite(member) {
+  latestBindInvite.value = await createVirtualChildBindInvite({
+    familyId: currentFamily.value.familyId,
+    memberId: member.id
+  })
+  uni.showToast({ title: '绑定码已生成', icon: 'success' })
+}
+
+function copyBindInviteToken() {
+  if (!latestBindInvite.value?.token) {
+    return
+  }
+
+  uni.setClipboardData({
+    data: latestBindInvite.value.token,
+    success() {
+      uni.showToast({ title: '绑定码已复制', icon: 'success' })
     },
     fail() {
       uni.showToast({ title: '复制失败，请手动复制', icon: 'none' })
@@ -709,5 +749,16 @@ function formatTime(value) {
   line-height: 30px;
   margin: 4px 0 0;
   padding: 0 14px;
+}
+
+.link-action-btn {
+  background: #eff6ff;
+  border: none;
+  border-radius: 14px;
+  color: #2563eb;
+  font-size: 11px;
+  line-height: 26px;
+  margin: 6px 0 0;
+  padding: 0 10px;
 }
 </style>
