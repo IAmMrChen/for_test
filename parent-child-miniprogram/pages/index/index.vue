@@ -107,6 +107,28 @@
         </view>
       </view>
 
+      <view v-if="isParentRole" class="manage-panel">
+        <view class="manage-header">
+          <text class="manage-title">任务管理</text>
+          <text class="manage-count">{{ tasks.length }} 项</text>
+        </view>
+        <view v-if="tasks.length === 0" class="state-block compact">
+          <text>暂无可管理任务</text>
+        </view>
+        <view v-else class="manage-list">
+          <view class="manage-item" v-for="task in tasks" :key="task.id">
+            <view class="task-info">
+              <view class="task-title">{{ task.title }}</view>
+              <view class="task-reward">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</view>
+            </view>
+            <view class="manage-actions">
+              <button class="plain-action-btn" size="mini" @click="editTask(task)">编辑</button>
+              <button class="danger-action-btn" size="mini" @click="archiveExistingTask(task)">归档</button>
+            </view>
+          </view>
+        </view>
+      </view>
+
       <view v-if="isParentRole" class="proxy-panel">
         <view class="proxy-header">
           <view>
@@ -184,7 +206,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { listMembers } from '../../api/member.js'
-import { auditTask, claimTask, createTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
+import { archiveTask, auditTask, claimTask, createTask, listTaskRecords, listTasks, submitTask, updateTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -201,6 +223,7 @@ const submittingProxyTaskId = ref(0)
 const showTaskForm = ref(false)
 const submittingTask = ref(false)
 const taskForm = ref(defaultTaskForm())
+const editingTaskId = ref(0)
 
 const taskCycles = [
   { label: '一次性', value: 'ONCE' },
@@ -351,10 +374,13 @@ function defaultTaskForm() {
 }
 
 function resetTaskForm() {
-  taskForm.value = defaultTaskForm()
+ taskForm.value = defaultTaskForm()
+  editingTaskId.value = 0
 }
 
 function openTaskForm() {
+  editingTaskId.value = 0
+  taskForm.value = defaultTaskForm()
   showTaskForm.value = true
 }
 
@@ -405,17 +431,61 @@ async function publishTask() {
 
   submittingTask.value = true
   try {
-    await createTask({
-      ...payload,
-      familyId: currentFamily.value.familyId
-    })
-    uni.showToast({ title: '任务已发布', icon: 'success' })
+    const familyId = currentFamily.value.familyId
+    if (editingTaskId.value) {
+      await updateTask({
+        ...payload,
+        familyId,
+        taskId: editingTaskId.value
+      })
+      uni.showToast({ title: '任务已更新', icon: 'success' })
+    } else {
+      await createTask({
+        ...payload,
+        familyId
+      })
+      uni.showToast({ title: '任务已发布', icon: 'success' })
+    }
     showTaskForm.value = false
     resetTaskForm()
     await loadHome()
   } finally {
     submittingTask.value = false
   }
+}
+
+function editTask(task) {
+  editingTaskId.value = task.id
+  taskForm.value = {
+    title: task.title,
+    points: task.points,
+    cycleType: task.cycleType
+  }
+  showTaskForm.value = true
+}
+
+async function archiveExistingTask(task) {
+  const confirmed = await new Promise((resolve) => {
+    uni.showModal({
+      title: '确认归档',
+      content: `归档后孩子将不能再领取“${task.title}”`,
+      success: (res) => resolve(res.confirm)
+    })
+  })
+  if (!confirmed) {
+    return
+  }
+
+  await archiveTask({
+    familyId: currentFamily.value.familyId,
+    taskId: task.id
+  })
+  uni.showToast({ title: '任务已归档', icon: 'success' })
+  await loadHome()
+}
+
+function cycleLabel(value) {
+  return taskCycles.find((cycle) => cycle.value === value)?.label || value
 }
 
 function syncSelectedVirtualChild() {
@@ -712,6 +782,50 @@ function formatTime(value) {
   padding: 16px;
 }
 
+.manage-panel {
+  background: #fff;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  padding: 16px;
+}
+
+.manage-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.manage-title {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.manage-count {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manage-item {
+  align-items: center;
+  border-top: 1px solid #eef2f7;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+}
+
+.manage-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .create-header {
   align-items: center;
   display: flex;
@@ -819,6 +933,17 @@ function formatTime(value) {
   background: #fff;
   border: 1px solid #cbd5e1;
   color: #475569;
+}
+
+.danger-action-btn {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
 }
 
 .proxy-panel {

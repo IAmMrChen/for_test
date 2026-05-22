@@ -148,6 +148,10 @@
               >
                 {{ rewardButtonText(reward) }}
               </button>
+              <view v-if="isParentRole" class="manage-actions">
+                <button class="plain-action-btn" size="mini" @click="editReward(reward)">编辑</button>
+                <button class="danger-action-btn" size="mini" @click="offShelfExistingReward(reward)">下架</button>
+              </view>
             </view>
           </view>
         </view>
@@ -168,8 +172,10 @@ import {
   deliverReward,
   listRewardRecords,
   listRewards,
+  offShelfReward,
   receiveReward,
-  rejectReward
+  rejectReward,
+  updateReward
 } from '../../api/reward.js'
 import { listMembers } from '../../api/member.js'
 import { getCurrentFamily } from '../../utils/storage.js'
@@ -183,6 +189,7 @@ const deliveredRecords = ref([])
 const showRewardForm = ref(false)
 const submittingReward = ref(false)
 const rewardForm = ref(defaultRewardForm())
+const editingRewardId = ref(0)
 const members = ref([])
 const selectedRewardVirtualChildId = ref(0)
 const submittingProxyRewardId = ref(0)
@@ -338,9 +345,12 @@ function defaultRewardForm() {
 
 function resetRewardForm() {
   rewardForm.value = defaultRewardForm()
+  editingRewardId.value = 0
 }
 
 function openRewardForm() {
+  editingRewardId.value = 0
+  rewardForm.value = defaultRewardForm()
   showRewardForm.value = true
 }
 
@@ -396,17 +406,57 @@ async function createNewReward() {
 
   submittingReward.value = true
   try {
-    await createReward({
-      ...payload,
-      familyId: currentFamily.value.familyId
-    })
-    uni.showToast({ title: '奖励已创建', icon: 'success' })
+    const familyId = currentFamily.value.familyId
+    if (editingRewardId.value) {
+      await updateReward({
+        ...payload,
+        familyId,
+        rewardId: editingRewardId.value
+      })
+      uni.showToast({ title: '奖励已更新', icon: 'success' })
+    } else {
+      await createReward({
+        ...payload,
+        familyId
+      })
+      uni.showToast({ title: '奖励已创建', icon: 'success' })
+    }
     showRewardForm.value = false
     resetRewardForm()
     await loadRewardPage()
   } finally {
     submittingReward.value = false
   }
+}
+
+function editReward(reward) {
+  editingRewardId.value = reward.id
+  rewardForm.value = {
+    name: reward.name,
+    pointsCost: reward.pointsCost,
+    stock: reward.stock < 0 ? 0 : reward.stock
+  }
+  showRewardForm.value = true
+}
+
+async function offShelfExistingReward(reward) {
+  const confirmed = await new Promise((resolve) => {
+    uni.showModal({
+      title: '确认下架',
+      content: `下架后孩子将不能再兑换“${reward.name}”`,
+      success: (res) => resolve(res.confirm)
+    })
+  })
+  if (!confirmed) {
+    return
+  }
+
+  await offShelfReward({
+    familyId: currentFamily.value.familyId,
+    rewardId: reward.id
+  })
+  uni.showToast({ title: '奖励已下架', icon: 'success' })
+  await loadRewardPage()
 }
 
 function syncSelectedRewardVirtualChild() {
@@ -602,6 +652,11 @@ function formatTime(value) {
   gap: 8px;
 }
 
+.manage-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .exchange-btn,
 .primary-btn,
 .plain-btn {
@@ -735,6 +790,18 @@ function formatTime(value) {
   background: #fff;
   border: 1px solid #cbd5e1;
   color: #475569;
+}
+
+.danger-action-btn {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  min-width: 64px;
+  padding: 0 12px;
 }
 
 .proxy-panel {

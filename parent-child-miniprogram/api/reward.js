@@ -53,3 +53,19 @@ export function createReward(data) {
     data
   })
 }
+
+export function updateReward(data) {
+  return request({
+    url: '/api/reward/update',
+    method: 'POST',
+    data
+  })
+}
+
+export function offShelfReward(data) {
+  return request({
+    url: '/api/reward/offShelf',
+    method: 'POST',
+    data
+  })
+}

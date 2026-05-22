@@ -45,3 +45,19 @@ export function createTask(data) {
     data
   })
 }
+
+export function updateTask(data) {
+  return request({
+    url: '/api/task/update',
+    method: 'POST',
+    data
+  })
+}
+
+export function archiveTask(data) {
+  return request({
+    url: '/api/task/archive',
+    method: 'POST',
+    data
+  })
+}
