@@ -45,6 +45,8 @@ func RegisterRoutes(mux *http.ServeMux, jwtSecret string) {
 	mux.HandleFunc("POST /api/task/audit", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Audit)))
 	mux.HandleFunc("GET /api/task/records", recoverRoute(apix.WithAuth(jwtSecret, taskApi.Records)))
 	mux.HandleFunc("POST /api/reward/create", recoverRoute(apix.WithAuth(jwtSecret, rewardApi.Create)))
+	mux.HandleFunc("POST /api/reward/update", recoverRoute(apix.WithAuth(jwtSecret, rewardApi.Update)))
+	mux.HandleFunc("POST /api/reward/offShelf", recoverRoute(apix.WithAuth(jwtSecret, rewardApi.OffShelf)))
 	mux.HandleFunc("GET /api/reward/list", recoverRoute(apix.WithAuth(jwtSecret, rewardApi.List)))
 	mux.HandleFunc("POST /api/reward/apply", recoverRoute(apix.WithAuth(jwtSecret, rewardApi.Apply)))
 	mux.HandleFunc("POST /api/reward/deliver", recoverRoute(apix.WithAuth(jwtSecret, rewardApi.Deliver)))

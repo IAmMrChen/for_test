@@ -111,3 +111,88 @@ func TestIntegrationRewardExchangeFlow(t *testing.T) {
 		t.Fatalf("refund point log count = %v, want 1", refundCount)
 	}
 }
+
+func TestIntegrationRewardUpdateAndOffShelfFlow(t *testing.T) {
+	if os.Getenv("PARENT_CHILD_DB_INTEGRATION") != "1" {
+		t.Skip("set PARENT_CHILD_DB_INTEGRATION=1 to run database integration flow")
+	}
+
+	resx.InitDb(resx.Conf.DB)
+	ensureIntegrationSchema(t)
+
+	seed := time.Now().UnixMilli()
+	ownerUserId := seed + 400
+	childUserId := seed + 401
+
+	family := FamilyService.CreateFamily(ownerUserId, model.FamilyCreateRequest{
+		Name:     fmt.Sprintf("reward-management-family-%d", seed),
+		Nickname: "owner",
+	})
+	familyId := family.Family.Id
+	t.Cleanup(func() {
+		cleanupIntegrationFamily(t, familyId)
+	})
+
+	invite := InviteService.CreateInvite(ownerUserId, model.FamilyInviteCreateRequest{
+		FamilyId:   familyId,
+		TargetRole: model.FamilyRoleChild,
+	})
+	InviteService.AcceptInvite(childUserId, invite.Token)
+
+	reward := RewardService.CreateReward(ownerUserId, model.RewardCreateRequest{
+		FamilyId:   familyId,
+		Name:       "Old reward",
+		PointsCost: 5,
+		Stock:      2,
+	})
+
+	mustPanicWith(t, "permission denied", func() {
+		RewardService.UpdateReward(childUserId, model.RewardUpdateRequest{
+			FamilyId:   familyId,
+			RewardId:   reward.Id,
+			Name:       "Child update",
+			PointsCost: 6,
+			Stock:      3,
+		})
+	})
+
+	updated := RewardService.UpdateReward(ownerUserId, model.RewardUpdateRequest{
+		FamilyId:   familyId,
+		RewardId:   reward.Id,
+		Name:       "New reward",
+		PointsCost: 9,
+		Stock:      4,
+	})
+	if updated.Name != "New reward" || updated.PointsCost != 9 || updated.Stock != 4 {
+		t.Fatalf("updated reward = %+v", updated)
+	}
+
+	mustPanicWith(t, "permission denied", func() {
+		RewardService.OffShelfReward(childUserId, model.RewardOffShelfRequest{
+			FamilyId: familyId,
+			RewardId: reward.Id,
+		})
+	})
+
+	offShelf := RewardService.OffShelfReward(ownerUserId, model.RewardOffShelfRequest{
+		FamilyId: familyId,
+		RewardId: reward.Id,
+	})
+	if offShelf.Status != model.RewardStatusOffShelf {
+		t.Fatalf("off shelf status = %d, want off shelf", offShelf.Status)
+	}
+
+	rewards := RewardService.ListRewards(ownerUserId, familyId)
+	for _, item := range rewards {
+		if item.Id == reward.Id {
+			t.Fatalf("off shelf reward should not be listed: %+v", item)
+		}
+	}
+
+	mustPanicWith(t, "reward not found", func() {
+		RewardService.ApplyReward(childUserId, model.RewardApplyRequest{
+			FamilyId: familyId,
+			RewardId: reward.Id,
+		})
+	})
+}

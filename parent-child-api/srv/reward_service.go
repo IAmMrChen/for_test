@@ -26,6 +26,19 @@ func normalizeRewardCreateRequest(req model.RewardCreateRequest) model.RewardCre
 	return req
 }
 
+func normalizeRewardUpdateRequest(req model.RewardUpdateRequest) model.RewardUpdateRequest {
+	normalized := normalizeRewardCreateRequest(model.RewardCreateRequest{
+		FamilyId:   req.FamilyId,
+		Name:       req.Name,
+		PointsCost: req.PointsCost,
+		Stock:      req.Stock,
+	})
+	req.Name = normalized.Name
+	req.PointsCost = normalized.PointsCost
+	req.Stock = normalized.Stock
+	return req
+}
+
 func (x rewardService) CreateReward(operatorUserId int64, req model.RewardCreateRequest) model.Reward {
 	req = normalizeRewardCreateRequest(req)
 	operator := MemberService.RequireParentRole(operatorUserId, req.FamilyId)
@@ -52,6 +65,49 @@ func (x rewardService) CreateReward(operatorUserId int64, req model.RewardCreate
 	}
 }
 
+func (x rewardService) UpdateReward(operatorUserId int64, req model.RewardUpdateRequest) model.Reward {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.RewardId == 0 {
+		panic(fmt.Errorf("reward id is required"))
+	}
+	req = normalizeRewardUpdateRequest(req)
+	MemberService.RequireParentRole(operatorUserId, req.FamilyId)
+
+	affected := resx.Db.Main.MustExecute(`
+		UPDATE rewards
+		SET name=@p1, points_cost=@p2, stock=@p3
+		WHERE id=@p4 AND family_id=@p5 AND status=@p6
+	`, req.Name, req.PointsCost, req.Stock, req.RewardId, req.FamilyId, model.RewardStatusActive)
+	if affected != 1 {
+		panic(fmt.Errorf("reward not found"))
+	}
+	return loadActiveReward(req.FamilyId, req.RewardId)
+}
+
+func (x rewardService) OffShelfReward(operatorUserId int64, req model.RewardOffShelfRequest) model.Reward {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.RewardId == 0 {
+		panic(fmt.Errorf("reward id is required"))
+	}
+	MemberService.RequireParentRole(operatorUserId, req.FamilyId)
+
+	reward := loadActiveReward(req.FamilyId, req.RewardId)
+	affected := resx.Db.Main.MustExecute(`
+		UPDATE rewards
+		SET status=@p1
+		WHERE id=@p2 AND family_id=@p3 AND status=@p4
+	`, model.RewardStatusOffShelf, req.RewardId, req.FamilyId, model.RewardStatusActive)
+	if affected != 1 {
+		panic(fmt.Errorf("reward not found"))
+	}
+	reward.Status = model.RewardStatusOffShelf
+	return reward
+}
+
 func (x rewardService) ListRewards(userId int64, familyId int64) []model.Reward {
 	if MemberService.LoadActiveMember(userId, familyId) == nil {
 		panic(fmt.Errorf("permission denied"))
@@ -70,6 +126,26 @@ func (x rewardService) ListRewards(userId int64, familyId int64) []model.Reward 
 		ORDER BY id DESC
 	`
 	return resx.Db.Main.MustListOf(model.Reward{}, sql, familyId, model.RewardStatusActive).([]model.Reward)
+}
+
+func loadActiveReward(familyId, rewardId int64) model.Reward {
+	const sql = `
+		SELECT id
+			, family_id
+			, name
+			, points_cost
+			, stock
+			, status
+			, created_by
+		FROM rewards
+		WHERE id=@p1 AND family_id=@p2 AND status=@p3
+	`
+	reward := &model.Reward{}
+	ok := resx.Db.Main.MustGetStruct(reward, sql, rewardId, familyId, model.RewardStatusActive)
+	if !ok {
+		panic(fmt.Errorf("reward not found"))
+	}
+	return *reward
 }
 
 func (x rewardService) ApplyReward(operatorUserId int64, req model.RewardApplyRequest) model.RewardRecord {

@@ -43,6 +43,19 @@ type RewardCreateRequest struct {
 	Stock      int    `json:"stock"`
 }
 
+type RewardUpdateRequest struct {
+	FamilyId   int64  `json:"familyId"`
+	RewardId   int64  `json:"rewardId"`
+	Name       string `json:"name"`
+	PointsCost int    `json:"pointsCost"`
+	Stock      int    `json:"stock"`
+}
+
+type RewardOffShelfRequest struct {
+	FamilyId int64 `json:"familyId"`
+	RewardId int64 `json:"rewardId"`
+}
+
 type RewardApplyRequest struct {
 	FamilyId int64 `json:"familyId"`
 	RewardId int64 `json:"rewardId"`

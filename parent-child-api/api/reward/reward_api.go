@@ -22,6 +22,24 @@ func (x RewardApi) Create(w http.ResponseWriter, r *http.Request, token *ux.Auth
 	apix.WriteData(w, srv.RewardService.CreateReward(token.UserId, req))
 }
 
+func (x RewardApi) Update(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.RewardUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.RewardService.UpdateReward(token.UserId, req))
+}
+
+func (x RewardApi) OffShelf(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.RewardOffShelfRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.RewardService.OffShelfReward(token.UserId, req))
+}
+
 func (x RewardApi) List(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
 	familyId, err := strconv.ParseInt(r.URL.Query().Get("familyId"), 10, 64)
 	if err != nil || familyId == 0 {

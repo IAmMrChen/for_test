@@ -43,6 +43,26 @@ func TestNormalizeRewardCreateRequest(t *testing.T) {
 	}
 }
 
+func TestNormalizeRewardUpdateRequest(t *testing.T) {
+	req := normalizeRewardUpdateRequest(model.RewardUpdateRequest{
+		FamilyId:   1,
+		RewardId:   2,
+		Name:       " Toy ",
+		PointsCost: 0,
+		Stock:      0,
+	})
+
+	if req.Name != "Toy" {
+		t.Fatalf("name = %q, want Toy", req.Name)
+	}
+	if req.PointsCost != 1 {
+		t.Fatalf("pointsCost = %d, want 1", req.PointsCost)
+	}
+	if req.Stock != -1 {
+		t.Fatalf("stock = %d, want -1 unlimited stock", req.Stock)
+	}
+}
+
 func TestRewardServiceApplyRejectsMissingFamily(t *testing.T) {
 	resx.Db = nil
 
@@ -66,4 +86,20 @@ func TestRewardOperateStatusFromDeliverFlag(t *testing.T) {
 	if rewardOperateStatus(false) != model.RewardRecordStatusRejected {
 		t.Fatal("reject flag should map to REJECTED")
 	}
+}
+
+func TestRewardServiceOffShelfRewardRejectsMissingReward(t *testing.T) {
+	resx.Db = nil
+
+	defer func() {
+		v := recover()
+		if v == nil {
+			t.Fatal("OffShelfReward should panic")
+		}
+		if fmt.Sprint(v) != "reward id is required" {
+			t.Fatalf("panic = %v, want reward id is required", v)
+		}
+	}()
+
+	RewardService.OffShelfReward(1, model.RewardOffShelfRequest{FamilyId: 1})
 }
