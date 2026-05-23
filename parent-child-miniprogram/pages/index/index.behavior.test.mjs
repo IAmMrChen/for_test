@@ -15,3 +15,8 @@ assert.ok(source.includes('查看全部任务'), '首页代孩子快捷区应提
 assert.ok(source.includes('/pages/tasks/index'), '首页应能跳转到任务页')
 assert.ok(!source.includes('发布任务'), '首页不应展示发布任务表单')
 assert.ok(!source.includes('任务管理'), '首页不应展示完整任务管理列表')
+assert.ok(source.includes('支持真实孩子和虚拟孩子'), '首页代孩子模块应明确支持真实孩子和虚拟孩子')
+assert.ok(source.includes('loadError'), '首页应有加载错误态，避免接口异常白屏')
+assert.ok(!source.includes('throw error'), '首页不应把加载错误直接抛到页面运行时')
+assert.ok(source.includes('applyClaimedTaskRecord'), '首页领取任务后应更新本地状态而不是整页刷新')
+assert.ok(source.includes('applySubmittedTaskRecord'), '首页提交任务后应更新本地状态而不是整页刷新')

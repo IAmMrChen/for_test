@@ -15,6 +15,13 @@
       <text>正在加载首页...</text>
     </view>
 
+    <view v-else-if="loadError" class="content-area">
+      <view class="state-block">
+        <text>{{ loadError }}</text>
+        <button class="plain-action-btn retry-btn" size="mini" @click="loadHome">重新加载</button>
+      </view>
+    </view>
+
     <view v-else-if="isChild" class="content-area">
       <view class="summary-row">
         <view class="summary-item">
@@ -121,7 +128,7 @@
         <view class="proxy-header">
           <view>
             <text class="proxy-title">代孩子完成任务</text>
-            <text class="proxy-subtitle">选择孩子后处理常用任务</text>
+            <text class="proxy-subtitle">支持真实孩子和虚拟孩子</text>
           </view>
           <button class="plain-action-btn" size="mini" @click="goTaskPage">查看全部任务</button>
         </view>
@@ -180,6 +187,7 @@ import { auditTask, claimTask, listTaskRecords, listTasks, submitTask } from '..
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
+const loadError = ref('')
 const currentFamily = ref(null)
 const summary = ref({})
 const tasks = ref([])
@@ -245,6 +253,7 @@ async function loadHome(retried = false) {
 
   currentFamily.value = family
   loading.value = true
+  loadError.value = ''
   try {
     await ensureDemoLogin()
     const familyId = family.familyId
@@ -293,7 +302,8 @@ async function loadHome(retried = false) {
     }
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
-      throw error
+      loadError.value = error.message || '首页加载失败，请稍后重试'
+      return
     }
     await ensureDemoLogin(true)
     await loadHome(true)
@@ -321,15 +331,15 @@ function taskRowForRecords(task, claimedRecordsValue, pendingRecordsValue, appro
 async function handleTaskAction(task) {
   const familyId = currentFamily.value.familyId
   if (task.viewStatus === 'claimable') {
-    await claimTask({ familyId, taskId: task.id })
+    const record = await claimTask({ familyId, taskId: task.id })
+    applyClaimedTaskRecord(record)
     uni.showToast({ title: '已领取任务', icon: 'success' })
-    await loadHome()
     return
   }
   if (task.viewStatus === 'claimed') {
-    await submitTask({ familyId, recordId: task.record.id })
+    const record = await submitTask({ familyId, recordId: task.record.id })
+    applySubmittedTaskRecord(record)
     uni.showToast({ title: '已提交审核', icon: 'success' })
-    await loadHome()
   }
 }
 
@@ -386,18 +396,67 @@ async function handleProxyTaskAction(task) {
   try {
     const familyId = currentFamily.value.familyId
     if (task.viewStatus === 'claimable') {
-      await claimTask({ familyId, taskId: task.id, memberId: child.id })
+      const record = await claimTask({ familyId, taskId: task.id, memberId: child.id })
+      applyProxyClaimedTaskRecord(record)
       uni.showToast({ title: '已为孩子领取任务', icon: 'success' })
-      await loadHome()
       return
     }
     if (task.viewStatus === 'claimed') {
-      await submitTask({ familyId, recordId: task.record.id, memberId: child.id })
+      const record = await submitTask({ familyId, recordId: task.record.id, memberId: child.id })
+      applyProxySubmittedTaskRecord(record, task, child)
       uni.showToast({ title: '已提交审核', icon: 'success' })
-      await loadHome()
     }
   } finally {
     submittingProxyTaskId.value = 0
+  }
+}
+
+function applyClaimedTaskRecord(record) {
+  claimedRecords.value = [
+    record,
+    ...claimedRecords.value.filter((item) => item.id !== record.id)
+  ]
+  summary.value = {
+    ...summary.value,
+    myClaimedTaskCount: (summary.value.myClaimedTaskCount || 0) + 1
+  }
+}
+
+function applySubmittedTaskRecord(record) {
+  claimedRecords.value = claimedRecords.value.filter((item) => item.id !== record.id)
+  pendingRecords.value = [
+    record,
+    ...pendingRecords.value.filter((item) => item.id !== record.id)
+  ]
+  summary.value = {
+    ...summary.value,
+    myClaimedTaskCount: Math.max((summary.value.myClaimedTaskCount || 0) - 1, 0),
+    myPendingTaskCount: (summary.value.myPendingTaskCount || 0) + 1
+  }
+}
+
+function applyProxyClaimedTaskRecord(record) {
+  proxyClaimedRecords.value = [
+    record,
+    ...proxyClaimedRecords.value.filter((item) => item.id !== record.id)
+  ]
+}
+
+function applyProxySubmittedTaskRecord(record, task, child) {
+  proxyClaimedRecords.value = proxyClaimedRecords.value.filter((item) => item.id !== record.id)
+  const pendingRecord = {
+    ...record,
+    taskTitle: task.title,
+    points: task.points,
+    nickname: child.nickname
+  }
+  parentPendingRecords.value = [
+    pendingRecord,
+    ...parentPendingRecords.value.filter((item) => item.id !== record.id)
+  ]
+  summary.value = {
+    ...summary.value,
+    familyPendingTaskCount: (summary.value.familyPendingTaskCount || 0) + 1
   }
 }
 
@@ -734,6 +793,10 @@ function formatTime(value) {
 
 .state-block.compact {
   padding: 20px 16px;
+}
+
+.retry-btn {
+  margin-top: 12px;
 }
 
 .proxy-panel {

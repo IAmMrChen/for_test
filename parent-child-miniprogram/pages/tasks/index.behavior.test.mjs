@@ -15,3 +15,7 @@ assert.ok(pageSource.includes('已存在同名任务，仍要继续吗？'), '�
 assert.ok(pageSource.includes('confirmDuplicateTaskTitle'), '任务页应通过确认函数允许同名任务继续提交')
 assert.ok(pageSource.includes('archiveExistingTask'), '任务页应支持归档任务')
 assert.ok(pageSource.includes('editTask'), '任务页应支持编辑任务')
+assert.ok(pageSource.includes('loadError'), '任务页应有加载错误态，避免接口异常白屏')
+assert.ok(!pageSource.includes('throw error'), '任务页不应把加载错误直接抛到页面运行时')
+assert.ok(pageSource.includes('applyClaimedTaskRecord'), '领取任务后应更新本地状态而不是整页刷新')
+assert.ok(pageSource.includes('applySubmittedTaskRecord'), '提交任务后应更新本地状态而不是整页刷新')

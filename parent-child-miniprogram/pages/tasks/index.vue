@@ -15,6 +15,11 @@
       <text>正在加载任务...</text>
     </view>
 
+    <view v-else-if="loadError" class="state-block">
+      <text>{{ loadError }}</text>
+      <button class="plain-action-btn retry-btn" size="mini" @click="loadTaskPage">重新加载</button>
+    </view>
+
     <view v-else class="content">
       <view v-if="isParentRole" class="create-panel">
         <view class="create-header">
@@ -119,6 +124,7 @@ import { archiveTask, claimTask, createTask, listTaskRecords, listTasks, submitT
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
+const loadError = ref('')
 const currentFamily = ref(null)
 const summary = ref({})
 const tasks = ref([])
@@ -174,6 +180,7 @@ async function loadTaskPage(retried = false) {
 
   currentFamily.value = family
   loading.value = true
+  loadError.value = ''
   try {
     await ensureDemoLogin()
     const familyId = family.familyId
@@ -200,7 +207,8 @@ async function loadTaskPage(retried = false) {
     }
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
-      throw error
+      loadError.value = error.message || '任务加载失败，请稍后重试'
+      return
     }
     await ensureDemoLogin(true)
     await loadTaskPage(true)
@@ -353,16 +361,31 @@ async function archiveExistingTask(task) {
 async function handleTaskAction(task) {
   const familyId = currentFamily.value.familyId
   if (task.viewStatus === 'claimable') {
-    await claimTask({ familyId, taskId: task.id })
+    const record = await claimTask({ familyId, taskId: task.id })
+    applyClaimedTaskRecord(record)
     uni.showToast({ title: '已领取任务', icon: 'success' })
-    await loadTaskPage()
     return
   }
   if (task.viewStatus === 'claimed') {
-    await submitTask({ familyId, recordId: task.record.id })
+    const record = await submitTask({ familyId, recordId: task.record.id })
+    applySubmittedTaskRecord(record)
     uni.showToast({ title: '已提交审核', icon: 'success' })
-    await loadTaskPage()
   }
+}
+
+function applyClaimedTaskRecord(record) {
+  claimedRecords.value = [
+    record,
+    ...claimedRecords.value.filter((item) => item.id !== record.id)
+  ]
+}
+
+function applySubmittedTaskRecord(record) {
+  claimedRecords.value = claimedRecords.value.filter((item) => item.id !== record.id)
+  pendingRecords.value = [
+    record,
+    ...pendingRecords.value.filter((item) => item.id !== record.id)
+  ]
 }
 
 function recordMatchesCycle(record, task) {
@@ -570,6 +593,10 @@ function taskButtonText(task) {
 
 .state-block.compact {
   padding: 20px 16px;
+}
+
+.retry-btn {
+  margin-top: 12px;
 }
 
 .create-header {
