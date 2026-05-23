@@ -20,3 +20,7 @@ assert.ok(source.includes('loadError'), '首页应有加载错误态，避免接
 assert.ok(!source.includes('throw error'), '首页不应把加载错误直接抛到页面运行时')
 assert.ok(source.includes('applyClaimedTaskRecord'), '首页领取任务后应更新本地状态而不是整页刷新')
 assert.ok(source.includes('applySubmittedTaskRecord'), '首页提交任务后应更新本地状态而不是整页刷新')
+assert.ok(source.includes('directApproveProxyTask'), '首页代孩子完成任务应支持直接通过')
+assert.ok(source.includes('applyApprovedTaskRecord'), '审核通过后应本地更新状态而不是整页刷新')
+assert.ok(source.includes('removeRewardRecord'), '奖励发放或拒绝后应本地移除记录而不是整页刷新')
+assert.ok(!source.includes('await loadHome()'), '首页操作成功后不应整页刷新')

@@ -19,3 +19,5 @@ assert.ok(pageSource.includes('loadError'), '任务页应有加载错误态，�
 assert.ok(!pageSource.includes('throw error'), '任务页不应把加载错误直接抛到页面运行时')
 assert.ok(pageSource.includes('applyClaimedTaskRecord'), '领取任务后应更新本地状态而不是整页刷新')
 assert.ok(pageSource.includes('applySubmittedTaskRecord'), '提交任务后应更新本地状态而不是整页刷新')
+const handleTaskActionSource = pageSource.slice(pageSource.indexOf('async function handleTaskAction'), pageSource.indexOf('function applyClaimedTaskRecord'))
+assert.ok(!handleTaskActionSource.includes('await loadTaskPage()'), '领取/提交任务成功后不应整页刷新')

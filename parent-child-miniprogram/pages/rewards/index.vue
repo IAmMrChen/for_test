@@ -309,30 +309,30 @@ async function loadRewardPage(retried = false) {
 }
 
 async function apply(reward) {
-  await applyReward({
+  const record = await applyReward({
     familyId: currentFamily.value.familyId,
     rewardId: reward.id
   })
+  addAppliedRewardRecord(record, reward)
   uni.showToast({ title: '已申请兑换', icon: 'success' })
-  await loadRewardPage()
 }
 
 async function deliver(record) {
   await deliverReward({ recordId: record.id })
+  removeAppliedRewardRecord(record.id)
   uni.showToast({ title: '已发放', icon: 'success' })
-  await loadRewardPage()
 }
 
 async function reject(record) {
   await rejectReward({ recordId: record.id })
+  removeAppliedRewardRecord(record.id)
   uni.showToast({ title: '已驳回', icon: 'success' })
-  await loadRewardPage()
 }
 
 async function receive(record) {
   await receiveReward({ recordId: record.id })
+  removeDeliveredRewardRecord(record.id)
   uni.showToast({ title: '已确认收到', icon: 'success' })
-  await loadRewardPage()
 }
 
 function defaultRewardForm() {
@@ -479,16 +479,54 @@ async function applyProxyReward(reward) {
 
   submittingProxyRewardId.value = reward.id
   try {
-    await applyReward({
+    const record = await applyReward({
       familyId: currentFamily.value.familyId,
       rewardId: reward.id,
       memberId: child.id
     })
+    addAppliedRewardRecord(record, reward, child)
     uni.showToast({ title: '已为孩子申请兑换', icon: 'success' })
-    await loadRewardPage()
   } finally {
     submittingProxyRewardId.value = 0
   }
+}
+
+function addAppliedRewardRecord(record, reward, child = null) {
+  const nextRecord = {
+    ...record,
+    rewardId: reward.id,
+    rewardName: reward.name,
+    pointsCost: reward.pointsCost,
+    memberId: child?.id || record.memberId,
+    nickname: child?.nickname || record.nickname
+  }
+  appliedRecords.value = [
+    nextRecord,
+    ...appliedRecords.value.filter((item) => item.id !== record.id)
+  ]
+  rewards.value = rewards.value.map((item) => {
+    if (item.id !== reward.id || item.stock < 0) {
+      return item
+    }
+    return {
+      ...item,
+      stock: Math.max((item.stock || 0) - 1, 0)
+    }
+  })
+  if (!child) {
+    summary.value = {
+      ...summary.value,
+      currentPoints: Math.max((summary.value.currentPoints || 0) - reward.pointsCost, 0)
+    }
+  }
+}
+
+function removeAppliedRewardRecord(recordId) {
+  appliedRecords.value = appliedRecords.value.filter((item) => item.id !== recordId)
+}
+
+function removeDeliveredRewardRecord(recordId) {
+  deliveredRecords.value = deliveredRecords.value.filter((item) => item.id !== recordId)
 }
 
 function proxyRewardButtonText(reward) {

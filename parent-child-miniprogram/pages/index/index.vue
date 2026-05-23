@@ -162,7 +162,7 @@
               <button
                 class="action-btn"
                 :class="task.viewStatus"
-                :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed' || submittingProxyTaskId === task.id"
+                :disabled="task.viewStatus === 'completed' || submittingProxyTaskId === task.id"
                 @click="handleProxyTaskAction(task)"
               >
                 {{ proxyTaskButtonText(task) }}
@@ -344,15 +344,19 @@ async function handleTaskAction(task) {
 }
 
 async function audit(record, approved) {
-  await auditTask({
+  const audited = await auditTask({
     recordId: record.id,
     approved
   })
+  if (approved) {
+    applyApprovedTaskRecord(audited, record)
+  } else {
+    removePendingTaskRecord(record.id)
+  }
   uni.showToast({
     title: approved ? '已通过' : '已驳回',
     icon: 'success'
   })
-  await loadHome()
 }
 
 async function operateReward(record, delivered) {
@@ -365,13 +369,13 @@ async function operateReward(record, delivered) {
     title: delivered ? '已发放' : '已拒绝',
     icon: 'success'
   })
-  await loadHome()
+  removeRewardRecord(record.id)
 }
 
 async function receiveDeliveredReward(record) {
   await receiveReward({ recordId: record.id })
+  childDeliveredRewardRecords.value = childDeliveredRewardRecords.value.filter((item) => item.id !== record.id)
   uni.showToast({ title: '已确认收到', icon: 'success' })
-  await loadHome()
 }
 
 function syncSelectedChild() {
@@ -394,21 +398,33 @@ async function handleProxyTaskAction(task) {
 
   submittingProxyTaskId.value = task.id
   try {
-    const familyId = currentFamily.value.familyId
-    if (task.viewStatus === 'claimable') {
-      const record = await claimTask({ familyId, taskId: task.id, memberId: child.id })
-      applyProxyClaimedTaskRecord(record)
-      uni.showToast({ title: '已为孩子领取任务', icon: 'success' })
-      return
-    }
-    if (task.viewStatus === 'claimed') {
-      const record = await submitTask({ familyId, recordId: task.record.id, memberId: child.id })
-      applyProxySubmittedTaskRecord(record, task, child)
-      uni.showToast({ title: '已提交审核', icon: 'success' })
-    }
+    await directApproveProxyTask(task, child)
+    uni.showToast({ title: '已通过并发放积分', icon: 'success' })
   } finally {
     submittingProxyTaskId.value = 0
   }
+}
+
+async function directApproveProxyTask(task, child) {
+  const familyId = currentFamily.value.familyId
+  let pendingRecord = task.record
+  if (task.viewStatus === 'claimable') {
+    pendingRecord = await submitTask({ familyId, taskId: task.id, memberId: child.id })
+  } else if (task.viewStatus === 'claimed') {
+    pendingRecord = await submitTask({ familyId, recordId: task.record.id, memberId: child.id })
+  }
+  const approvedRecord = await auditTask({
+    recordId: pendingRecord.id,
+    approved: true
+  })
+  applyApprovedTaskRecord(approvedRecord, {
+    ...pendingRecord,
+    taskId: task.id,
+    taskTitle: task.title,
+    points: task.points,
+    memberId: child.id,
+    nickname: child.nickname
+  })
 }
 
 function applyClaimedTaskRecord(record) {
@@ -460,11 +476,57 @@ function applyProxySubmittedTaskRecord(record, task, child) {
   }
 }
 
+function applyApprovedTaskRecord(record, sourceRecord) {
+  removePendingTaskRecord(sourceRecord.id)
+  proxyClaimedRecords.value = proxyClaimedRecords.value.filter((item) => item.id !== sourceRecord.id)
+  proxyApprovedRecords.value = [
+    {
+      ...sourceRecord,
+      ...record,
+      status: 'APPROVED'
+    },
+    ...proxyApprovedRecords.value.filter((item) => item.id !== sourceRecord.id)
+  ]
+  members.value = members.value.map((member) => {
+    if (member.id !== sourceRecord.memberId) {
+      return member
+    }
+    return {
+      ...member,
+      currentPoints: (member.currentPoints || 0) + (sourceRecord.points || 0),
+      totalEarnedPoints: (member.totalEarnedPoints || 0) + (sourceRecord.points || 0)
+    }
+  })
+}
+
+function removePendingTaskRecord(recordId) {
+  const before = parentPendingRecords.value.length
+  parentPendingRecords.value = parentPendingRecords.value.filter((item) => item.id !== recordId)
+  const removed = before - parentPendingRecords.value.length
+  if (removed > 0) {
+    summary.value = {
+      ...summary.value,
+      familyPendingTaskCount: Math.max((summary.value.familyPendingTaskCount || 0) - removed, 0)
+    }
+  }
+}
+
+function removeRewardRecord(recordId) {
+  parentAppliedRewardRecords.value = parentAppliedRewardRecords.value.filter((item) => item.id !== recordId)
+  summary.value = {
+    ...summary.value,
+    familyAppliedRewardCount: Math.max((summary.value.familyAppliedRewardCount || 0) - 1, 0)
+  }
+}
+
 function proxyTaskButtonText(task) {
   if (submittingProxyTaskId.value === task.id) {
     return '处理中'
   }
-  return taskButtonText(task)
+  if (task.viewStatus === 'completed') {
+    return '已完成'
+  }
+  return '通过'
 }
 
 function taskButtonText(task) {

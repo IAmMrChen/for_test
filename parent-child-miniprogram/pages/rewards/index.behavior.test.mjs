@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const source = fs.readFileSync(path.join(__dirname, 'index.vue'), 'utf8')
+
+for (const name of ['apply', 'deliver', 'reject', 'receive', 'applyProxyReward']) {
+  const start = source.indexOf(`async function ${name}`)
+  assert.notEqual(start, -1, `奖励页应存在 ${name} 函数`)
+  const end = source.indexOf('\n}\n', start)
+  const body = source.slice(start, end)
+  assert.ok(!body.includes('await loadRewardPage()'), `${name} 成功后不应整页刷新`)
+}
+
+assert.ok(source.includes('addAppliedRewardRecord'), '兑换后应本地增加待发放记录')
+assert.ok(source.includes('removeAppliedRewardRecord'), '发放或驳回后应本地移除待发放记录')
+assert.ok(source.includes('removeDeliveredRewardRecord'), '确认收到后应本地移除待确认记录')
