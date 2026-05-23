@@ -1,24 +1,17 @@
 <template>
   <view class="container">
     <view class="header">
-      <text class="title">选择家庭</text>
-      <text class="subtitle">进入一个家庭后，就可以查看任务、积分和奖励</text>
-    </view>
-
-    <view class="entry-actions">
-      <button class="entry-btn primary" size="mini" @click="toggleCreateForm">创建家庭</button>
-      <button class="entry-btn plain" size="mini" @click="toggleInviteForm">输入邀请码</button>
-      <button class="entry-btn plain" size="mini" @click="toggleBindForm">关联孩子</button>
+      <view class="header-copy">
+        <text class="title">选择家庭</text>
+        <text class="subtitle">进入一个家庭后，就可以查看任务、积分和奖励</text>
+      </view>
+      <button class="create-top-btn" size="mini" @click="toggleCreateForm">创建家庭</button>
     </view>
 
     <view v-if="showCreateForm" class="entry-panel">
       <view class="form-row">
         <text class="form-label">家庭名称</text>
         <input v-model.trim="familyForm.name" class="form-input" placeholder="例如：陈家" />
-      </view>
-      <view class="form-row">
-        <text class="form-label">我的昵称</text>
-        <input v-model.trim="familyForm.nickname" class="form-input" placeholder="例如：爸爸" />
       </view>
       <view class="form-actions">
         <button class="plain-action-btn" size="mini" :disabled="submittingFamily" @click="cancelCreateFamily">取消</button>
@@ -28,17 +21,10 @@
       </view>
     </view>
 
-    <view v-if="showBindForm" class="entry-panel">
-      <view class="form-row">
-        <text class="form-label">虚拟孩子绑定码</text>
-        <input v-model.trim="bindForm.token" class="form-input" placeholder="输入家长发来的绑定码" />
-      </view>
-      <view class="form-actions">
-        <button class="plain-action-btn" size="mini" :disabled="submittingBind" @click="cancelAcceptBind">取消</button>
-        <button class="primary-action-btn" size="mini" :disabled="submittingBind" @click="submitAcceptBind">
-          {{ submittingBind ? '绑定中' : '确认绑定' }}
-        </button>
-      </view>
+    <view class="invite-entry">
+      <button class="text-action-btn" size="mini" @click="toggleInviteForm">
+        {{ showInviteForm ? '收起邀请码' : '已有邀请码？' }}
+      </button>
     </view>
 
     <view v-if="showInviteForm" class="entry-panel">
@@ -58,9 +44,10 @@
       <text>正在加载家庭...</text>
     </view>
 
-    <view v-else-if="families.length === 0" class="state-block">
+    <view v-else-if="families.length === 0" class="state-block empty-state">
       <text class="empty-title">暂无家庭</text>
-      <text class="empty-desc">创建一个家庭，或输入家人发来的邀请码加入家庭。</text>
+      <text class="empty-desc">创建一个家庭，或通过家人发来的邀请加入家庭。</text>
+      <button class="empty-create-btn" size="mini" @click="openCreateForm">创建家庭</button>
       <button class="retry-btn" size="mini" @click="loadFamilies">重新加载</button>
     </view>
 
@@ -93,20 +80,16 @@ import { onShow } from '@dcloudio/uni-app'
 import { ensureDemoLogin } from '../../api/auth.js'
 import { createFamily, listFamilies } from '../../api/family.js'
 import { acceptInvite } from '../../api/invite.js'
-import { acceptVirtualChildBindInvite } from '../../api/member.js'
 import { setCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
 const families = ref([])
 const showCreateForm = ref(false)
 const showInviteForm = ref(false)
-const showBindForm = ref(false)
 const submittingFamily = ref(false)
 const submittingInvite = ref(false)
-const submittingBind = ref(false)
 const familyForm = ref(defaultFamilyForm())
 const inviteForm = ref(defaultInviteForm())
-const bindForm = ref(defaultBindForm())
 
 onShow(() => {
   loadFamilies()
@@ -130,8 +113,7 @@ async function loadFamilies() {
 
 function defaultFamilyForm() {
   return {
-    name: '',
-    nickname: ''
+    name: ''
   }
 }
 
@@ -141,17 +123,15 @@ function defaultInviteForm() {
   }
 }
 
-function defaultBindForm() {
-  return {
-    token: ''
-  }
+function openCreateForm() {
+  showCreateForm.value = true
+  showInviteForm.value = false
 }
 
 function toggleCreateForm() {
   showCreateForm.value = !showCreateForm.value
   if (showCreateForm.value) {
     showInviteForm.value = false
-    showBindForm.value = false
   }
 }
 
@@ -159,15 +139,6 @@ function toggleInviteForm() {
   showInviteForm.value = !showInviteForm.value
   if (showInviteForm.value) {
     showCreateForm.value = false
-    showBindForm.value = false
-  }
-}
-
-function toggleBindForm() {
-  showBindForm.value = !showBindForm.value
-  if (showBindForm.value) {
-    showCreateForm.value = false
-    showInviteForm.value = false
   }
 }
 
@@ -179,11 +150,6 @@ function cancelCreateFamily() {
 function cancelAcceptInvite() {
   showInviteForm.value = false
   inviteForm.value = defaultInviteForm()
-}
-
-function cancelAcceptBind() {
-  showBindForm.value = false
-  bindForm.value = defaultBindForm()
 }
 
 function familyFromCreateResponse(response) {
@@ -202,7 +168,6 @@ async function submitCreateFamily() {
   }
 
   const name = familyForm.value.name.trim()
-  const nickname = familyForm.value.nickname.trim()
   if (!name) {
     uni.showToast({ title: '请填写家庭名称', icon: 'none' })
     return
@@ -210,7 +175,7 @@ async function submitCreateFamily() {
 
   submittingFamily.value = true
   try {
-    const response = await createFamily({ name, nickname })
+    const response = await createFamily({ name, nickname: '家主' })
     const family = familyFromCreateResponse(response)
     setCurrentFamily(family)
     uni.showToast({ title: '家庭已创建', icon: 'success' })
@@ -249,35 +214,6 @@ async function submitAcceptInvite() {
   }
 }
 
-async function submitAcceptBind() {
-  if (submittingBind.value) {
-    return
-  }
-
-  const token = bindForm.value.token.trim()
-  if (!token) {
-    uni.showToast({ title: '请填写绑定码', icon: 'none' })
-    return
-  }
-
-  submittingBind.value = true
-  try {
-    const member = await acceptVirtualChildBindInvite({ token })
-    const nextFamilies = (await listFamilies()) || []
-    families.value = nextFamilies
-    const family = nextFamilies.find((item) => item.familyId === member.familyId)
-    if (!family) {
-      uni.showToast({ title: '已绑定，请重新加载家庭', icon: 'none' })
-      return
-    }
-    setCurrentFamily(family)
-    uni.showToast({ title: '已绑定孩子账号', icon: 'success' })
-    uni.switchTab({ url: '/pages/index/index' })
-  } finally {
-    submittingBind.value = false
-  }
-}
-
 function selectFamily(family) {
   setCurrentFamily(family)
   uni.switchTab({
@@ -308,37 +244,64 @@ function roleName(roleType) {
 }
 
 .header {
+  align-items: flex-start;
   display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.header-copy {
+  display: flex;
+  flex: 1;
   flex-direction: column;
-  margin-bottom: 28px;
+  min-width: 0;
 }
 
-.entry-actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
+.title {
+  color: #1f2937;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
-.entry-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 32px;
-  margin: 0;
-  padding: 0 16px;
+.subtitle {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 20px;
 }
 
-.entry-btn.primary,
+.create-top-btn,
+.empty-create-btn,
 .primary-action-btn {
   background: #2563eb;
   border: none;
   color: #fff;
 }
 
-.entry-btn.plain,
-.plain-action-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+.create-top-btn {
+  border-radius: 16px;
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 32px;
+  margin: 2px 0 0;
+  padding: 0 14px;
+}
+
+.invite-entry {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 14px;
+}
+
+.text-action-btn {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 13px;
+  line-height: 28px;
+  margin: 0;
+  padding: 0;
 }
 
 .entry-panel {
@@ -387,17 +350,10 @@ function roleName(roleType) {
   padding: 0 14px;
 }
 
-.title {
-  color: #1f2937;
-  font-size: 26px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.subtitle {
-  color: #64748b;
-  font-size: 14px;
-  line-height: 20px;
+.plain-action-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
 }
 
 .family-list {
@@ -488,6 +444,10 @@ function roleName(roleType) {
   text-align: center;
 }
 
+.empty-state {
+  margin-top: 4px;
+}
+
 .empty-title {
   color: #1f2937;
   font-size: 18px;
@@ -499,10 +459,19 @@ function roleName(roleType) {
   line-height: 20px;
 }
 
+.empty-create-btn,
 .retry-btn {
-  background: #3b82f6;
-  border: none;
-  color: #fff;
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 32px;
   margin-top: 8px;
+  padding: 0 18px;
+}
+
+.retry-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  margin-top: 0;
 }
 </style>
