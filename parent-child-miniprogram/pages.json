@@ -29,6 +29,13 @@
       }
     },
     {
+      "path": "pages/points/index",
+      "style": {
+        "navigationBarTitleText": "积分流水",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/profile/index",
       "style": {
         "navigationBarTitleText": "我的",
