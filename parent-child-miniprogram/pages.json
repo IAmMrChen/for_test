@@ -15,6 +15,13 @@
       }
     },
     {
+      "path": "pages/tasks/index",
+      "style": {
+        "navigationBarTitleText": "任务",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/rewards/index",
       "style": {
         "navigationBarTitleText": "奖励",
@@ -44,6 +51,12 @@
       {
         "pagePath": "pages/index/index",
         "text": "首页",
+        "iconPath": "static/logo.png",
+        "selectedIconPath": "static/logo.png"
+      },
+      {
+        "pagePath": "pages/tasks/index",
+        "text": "任务",
         "iconPath": "static/logo.png",
         "selectedIconPath": "static/logo.png"
       },
