@@ -53,7 +53,7 @@
           <button
             class="action-btn"
             :class="task.viewStatus"
-            :disabled="task.viewStatus === 'pending'"
+            :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
             @click="handleTaskAction(task)"
           >
             {{ taskButtonText(task) }}
@@ -64,130 +64,21 @@
 
     <view v-else class="content-area">
       <view class="dashboard-stats">
-        <view class="stat-item">
+        <view class="stat-item" @click="scrollToSection('#audit-section')">
           <view class="stat-num text-orange">{{ summary.familyPendingTaskCount || 0 }}</view>
           <view class="stat-desc">待审核</view>
         </view>
-        <view class="stat-item">
+        <view class="stat-item" @click="scrollToSection('#reward-section')">
           <view class="stat-num text-green">{{ summary.familyAppliedRewardCount || 0 }}</view>
-          <view class="stat-desc">待发奖</view>
+          <view class="stat-desc">待奖励</view>
         </view>
-        <view class="stat-item">
+        <view class="stat-item" @click="goTaskPage">
           <view class="stat-num text-blue">{{ summary.activeTaskCount || 0 }}</view>
           <view class="stat-desc">可用任务</view>
         </view>
       </view>
 
-      <view v-if="isParentRole" class="create-panel">
-        <view class="create-header">
-          <view>
-            <text class="create-title">发布任务</text>
-            <text class="create-subtitle">给孩子增加一个可以领取的任务</text>
-          </view>
-          <button v-if="!showTaskForm" class="small-primary-btn" size="mini" @click="openTaskForm">发布</button>
-        </view>
-
-        <view v-if="showTaskForm" class="create-form">
-          <view class="form-row">
-            <text class="form-label">任务标题</text>
-            <input v-model.trim="taskForm.title" class="form-input" placeholder="例如：阅读 30 分钟" />
-          </view>
-          <view class="form-row">
-            <text class="form-label">奖励积分</text>
-            <input v-model="taskForm.points" class="form-input" type="number" placeholder="10" />
-          </view>
-          <view class="form-row">
-            <text class="form-label">任务周期</text>
-            <view class="cycle-options">
-              <button
-                v-for="cycle in taskCycles"
-                :key="cycle.value"
-                class="cycle-btn"
-                :class="{ active: taskForm.cycleType === cycle.value }"
-                size="mini"
-                @click="taskForm.cycleType = cycle.value"
-              >
-                {{ cycle.label }}
-              </button>
-            </view>
-          </view>
-          <view class="form-actions">
-            <button class="plain-action-btn" size="mini" :disabled="submittingTask" @click="cancelTaskForm">取消</button>
-            <button class="primary-action-btn" size="mini" :disabled="submittingTask" @click="publishTask">
-              {{ submittingTask ? '发布中' : '确认发布' }}
-            </button>
-          </view>
-        </view>
-      </view>
-
-      <view v-if="isParentRole" class="manage-panel">
-        <view class="manage-header">
-          <text class="manage-title">任务管理</text>
-          <text class="manage-count">{{ tasks.length }} 项</text>
-        </view>
-        <view v-if="tasks.length === 0" class="state-block compact">
-          <text>暂无可管理任务</text>
-        </view>
-        <view v-else class="manage-list">
-          <view class="manage-item" v-for="task in tasks" :key="task.id">
-            <view class="task-info">
-              <view class="task-title">{{ task.title }}</view>
-              <view class="task-reward">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</view>
-            </view>
-            <view class="manage-actions">
-              <button class="plain-action-btn" size="mini" @click="editTask(task)">编辑</button>
-              <button class="danger-action-btn" size="mini" @click="archiveExistingTask(task)">归档</button>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <view v-if="isParentRole" class="proxy-panel">
-        <view class="proxy-header">
-          <view>
-            <text class="proxy-title">代孩子完成任务</text>
-            <text class="proxy-subtitle">仅支持虚拟孩子</text>
-          </view>
-          <text v-if="selectedVirtualChild" class="proxy-points">{{ selectedVirtualChild.currentPoints || 0 }} 积分</text>
-        </view>
-
-        <view v-if="virtualChildren.length === 0" class="state-block compact">
-          <text>暂无虚拟孩子，请先在个人页创建</text>
-        </view>
-        <view v-else class="proxy-content">
-          <view class="child-options">
-            <button
-              v-for="child in virtualChildren"
-              :key="child.id"
-              class="child-option-btn"
-              :class="{ active: selectedVirtualChildId === child.id }"
-              size="mini"
-              @click="selectVirtualChild(child.id)"
-            >
-              {{ child.nickname }}
-            </button>
-          </view>
-
-          <view class="proxy-task-list">
-            <view class="task-item" v-for="task in proxyTaskRows" :key="task.id">
-              <view class="task-info">
-                <view class="task-title">{{ task.title }}</view>
-                <view class="task-reward">+{{ task.points }} 积分</view>
-              </view>
-              <button
-                class="action-btn"
-                :class="task.viewStatus"
-                :disabled="task.viewStatus === 'pending' || submittingProxyTaskId === task.id"
-                @click="handleProxyTaskAction(task)"
-              >
-                {{ proxyTaskButtonText(task) }}
-              </button>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <view class="section-title">待办事项</view>
+      <view id="audit-section" class="section-title">待审核任务</view>
       <view v-if="parentPendingRecords.length === 0" class="state-block">
         <text>当前没有待审核任务</text>
       </view>
@@ -209,7 +100,7 @@
         </view>
       </view>
 
-      <view class="section-title reward-section-title">待发放奖励</view>
+      <view id="reward-section" class="section-title reward-section-title">待发放奖励</view>
       <view v-if="parentAppliedRewardRecords.length === 0" class="state-block">
         <text>当前没有待发放奖励</text>
       </view>
@@ -225,6 +116,54 @@
           </view>
         </view>
       </view>
+
+      <view v-if="isParentRole" class="proxy-panel">
+        <view class="proxy-header">
+          <view>
+            <text class="proxy-title">代孩子完成任务</text>
+            <text class="proxy-subtitle">选择孩子后处理常用任务</text>
+          </view>
+          <button class="plain-action-btn" size="mini" @click="goTaskPage">查看全部任务</button>
+        </view>
+
+        <view v-if="children.length === 0" class="state-block compact">
+          <text>暂无孩子，请先在我的页面创建或邀请孩子</text>
+        </view>
+        <view v-else class="proxy-content">
+          <view class="child-options">
+            <button
+              v-for="child in children"
+              :key="child.id"
+              class="child-option-btn"
+              :class="{ active: selectedChildId === child.id }"
+              size="mini"
+              @click="selectChild(child.id)"
+            >
+              {{ child.nickname }}
+            </button>
+          </view>
+
+          <view v-if="proxyVisibleTaskRows.length === 0" class="state-block compact">
+            <text>当前孩子暂无可处理任务</text>
+          </view>
+          <view v-else class="proxy-task-list">
+            <view class="task-item" v-for="task in proxyVisibleTaskRows" :key="task.id">
+              <view class="task-info">
+                <view class="task-title">{{ task.title }}</view>
+                <view class="task-reward">+{{ task.points }} 积分 · {{ taskStatusText(task) }}</view>
+              </view>
+              <button
+                class="action-btn"
+                :class="task.viewStatus"
+                :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed' || submittingProxyTaskId === task.id"
+                @click="handleProxyTaskAction(task)"
+              >
+                {{ proxyTaskButtonText(task) }}
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -237,7 +176,7 @@ import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { listMembers } from '../../api/member.js'
 import { deliverReward, listRewardRecords, receiveReward, rejectReward } from '../../api/reward.js'
-import { archiveTask, auditTask, claimTask, createTask, listTaskRecords, listTasks, submitTask, updateTask } from '../../api/task.js'
+import { auditTask, claimTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -246,23 +185,15 @@ const summary = ref({})
 const tasks = ref([])
 const claimedRecords = ref([])
 const pendingRecords = ref([])
+const approvedRecords = ref([])
 const parentPendingRecords = ref([])
 const parentAppliedRewardRecords = ref([])
 const childDeliveredRewardRecords = ref([])
 const members = ref([])
 const proxyClaimedRecords = ref([])
-const selectedVirtualChildId = ref(0)
+const proxyApprovedRecords = ref([])
+const selectedChildId = ref(0)
 const submittingProxyTaskId = ref(0)
-const showTaskForm = ref(false)
-const submittingTask = ref(false)
-const taskForm = ref(defaultTaskForm())
-const editingTaskId = ref(0)
-
-const taskCycles = [
-  { label: '一次性', value: 'ONCE' },
-  { label: '每日', value: 'DAILY' },
-  { label: '每周', value: 'WEEKLY' }
-]
 
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
 const isChild = computed(() => roleType.value === 'CHILD')
@@ -274,44 +205,31 @@ const greetingText = computed(() => {
 })
 
 const taskRows = computed(() => {
-  return tasks.value.map((task) => {
-    const claimed = claimedRecords.value.find((record) => record.taskId === task.id)
-    const pending = pendingRecords.value.find((record) => record.taskId === task.id)
-    if (pending) {
-      return { ...task, viewStatus: 'pending', record: pending }
-    }
-    if (claimed) {
-      return { ...task, viewStatus: 'claimed', record: claimed }
-    }
-    return { ...task, viewStatus: 'claimable', record: null }
-  })
+  return tasks.value.map((task) => taskRowForRecords(task, claimedRecords.value, pendingRecords.value, approvedRecords.value))
 })
 
-const virtualChildren = computed(() => {
-  return members.value.filter((member) => member.roleType === 'CHILD' && member.isVirtual)
+const children = computed(() => {
+  return members.value.filter((member) => member.roleType === 'CHILD')
 })
 
-const selectedVirtualChild = computed(() => {
-  return virtualChildren.value.find((member) => member.id === selectedVirtualChildId.value) || null
+const selectedChild = computed(() => {
+  return children.value.find((member) => member.id === selectedChildId.value) || null
 })
 
 const proxyTaskRows = computed(() => {
-  const child = selectedVirtualChild.value
+  const child = selectedChild.value
   if (!child) {
     return []
   }
 
-  return tasks.value.map((task) => {
-    const claimed = proxyClaimedRecords.value.find((record) => record.taskId === task.id && record.memberId === child.id)
-    const pending = parentPendingRecords.value.find((record) => record.taskId === task.id && record.memberId === child.id)
-    if (pending) {
-      return { ...task, viewStatus: 'pending', record: pending }
-    }
-    if (claimed) {
-      return { ...task, viewStatus: 'claimed', record: claimed }
-    }
-    return { ...task, viewStatus: 'claimable', record: null }
-  })
+  const claimed = proxyClaimedRecords.value.filter((record) => record.memberId === child.id)
+  const pending = parentPendingRecords.value.filter((record) => record.memberId === child.id)
+  const approved = proxyApprovedRecords.value.filter((record) => record.memberId === child.id)
+  return tasks.value.map((task) => taskRowForRecords(task, claimed, pending, approved))
+})
+
+const proxyVisibleTaskRows = computed(() => {
+  return proxyTaskRows.value.slice(0, 5)
 })
 
 onShow(() => {
@@ -328,6 +246,7 @@ async function loadHome(retried = false) {
   currentFamily.value = family
   loading.value = true
   try {
+    await ensureDemoLogin()
     const familyId = family.familyId
     const [summaryData, taskList] = await Promise.all([
       getDashboardSummary(familyId),
@@ -337,34 +256,40 @@ async function loadHome(retried = false) {
     tasks.value = taskList || []
 
     if (summary.value.roleType === 'CHILD') {
-      const [claimed, pending, deliveredRewards] = await Promise.all([
+      const [claimed, pending, approved, deliveredRewards] = await Promise.all([
         listTaskRecords({ familyId, status: 'CLAIMED' }),
         listTaskRecords({ familyId, status: 'PENDING' }),
+        listTaskRecords({ familyId, status: 'APPROVED' }),
         listRewardRecords({ familyId, status: 'DELIVERED' })
       ])
       claimedRecords.value = claimed || []
       pendingRecords.value = pending || []
+      approvedRecords.value = approved || []
       childDeliveredRewardRecords.value = deliveredRewards || []
       parentPendingRecords.value = []
       parentAppliedRewardRecords.value = []
       members.value = []
       proxyClaimedRecords.value = []
-      selectedVirtualChildId.value = 0
+      proxyApprovedRecords.value = []
+      selectedChildId.value = 0
     } else if (isParentRole.value) {
-      const [memberList, claimed, pending, appliedRewards] = await Promise.all([
+      const [memberList, claimed, pending, approved, appliedRewards] = await Promise.all([
         listMembers(familyId),
         listTaskRecords({ familyId, status: 'CLAIMED' }),
         listTaskRecords({ familyId, status: 'PENDING' }),
+        listTaskRecords({ familyId, status: 'APPROVED' }),
         listRewardRecords({ familyId, status: 'APPLIED' })
       ])
       members.value = memberList || []
       proxyClaimedRecords.value = claimed || []
       parentPendingRecords.value = pending || []
+      proxyApprovedRecords.value = approved || []
       parentAppliedRewardRecords.value = appliedRewards || []
       childDeliveredRewardRecords.value = []
-      syncSelectedVirtualChild()
+      syncSelectedChild()
       claimedRecords.value = []
       pendingRecords.value = []
+      approvedRecords.value = []
     }
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
@@ -375,6 +300,22 @@ async function loadHome(retried = false) {
   } finally {
     loading.value = false
   }
+}
+
+function taskRowForRecords(task, claimedRecordsValue, pendingRecordsValue, approvedRecordsValue) {
+  const claimed = claimedRecordsValue.find((record) => record.taskId === task.id)
+  const pending = pendingRecordsValue.find((record) => record.taskId === task.id)
+  const approved = approvedRecordsValue.find((record) => record.taskId === task.id && recordMatchesCycle(record, task))
+  if (pending) {
+    return { ...task, viewStatus: 'pending', record: pending }
+  }
+  if (claimed) {
+    return { ...task, viewStatus: 'claimed', record: claimed }
+  }
+  if (approved) {
+    return { ...task, viewStatus: 'completed', record: approved }
+  }
+  return { ...task, viewStatus: 'claimable', record: null }
 }
 
 async function handleTaskAction(task) {
@@ -423,142 +364,19 @@ async function receiveDeliveredReward(record) {
   await loadHome()
 }
 
-function defaultTaskForm() {
-  return {
-    title: '',
-    points: 10,
-    cycleType: 'DAILY'
-  }
-}
-
-function resetTaskForm() {
- taskForm.value = defaultTaskForm()
-  editingTaskId.value = 0
-}
-
-function openTaskForm() {
-  editingTaskId.value = 0
-  taskForm.value = defaultTaskForm()
-  showTaskForm.value = true
-}
-
-function cancelTaskForm() {
-  showTaskForm.value = false
-  resetTaskForm()
-}
-
-function normalizePositiveInteger(value) {
-  const parsed = Number.parseInt(value, 10)
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
-function validateTaskForm() {
-  const title = taskForm.value.title.trim()
-  const points = normalizePositiveInteger(taskForm.value.points)
-  const cycleType = taskForm.value.cycleType
-
-  if (!title) {
-    uni.showToast({ title: '请填写任务标题', icon: 'none' })
-    return null
-  }
-  if (points <= 0) {
-    uni.showToast({ title: '奖励积分必须大于 0', icon: 'none' })
-    return null
-  }
-  if (!taskCycles.some((cycle) => cycle.value === cycleType)) {
-    uni.showToast({ title: '请选择任务周期', icon: 'none' })
-    return null
-  }
-
-  return {
-    title,
-    points,
-    cycleType
-  }
-}
-
-async function publishTask() {
-  if (submittingTask.value) {
+function syncSelectedChild() {
+  if (children.value.some((child) => child.id === selectedChildId.value)) {
     return
   }
-
-  const payload = validateTaskForm()
-  if (!payload) {
-    return
-  }
-
-  submittingTask.value = true
-  try {
-    const familyId = currentFamily.value.familyId
-    if (editingTaskId.value) {
-      await updateTask({
-        ...payload,
-        familyId,
-        taskId: editingTaskId.value
-      })
-      uni.showToast({ title: '任务已更新', icon: 'success' })
-    } else {
-      await createTask({
-        ...payload,
-        familyId
-      })
-      uni.showToast({ title: '任务已发布', icon: 'success' })
-    }
-    showTaskForm.value = false
-    resetTaskForm()
-    await loadHome()
-  } finally {
-    submittingTask.value = false
-  }
+  selectedChildId.value = children.value[0]?.id || 0
 }
 
-function editTask(task) {
-  editingTaskId.value = task.id
-  taskForm.value = {
-    title: task.title,
-    points: task.points,
-    cycleType: task.cycleType
-  }
-  showTaskForm.value = true
-}
-
-async function archiveExistingTask(task) {
-  const confirmed = await new Promise((resolve) => {
-    uni.showModal({
-      title: '确认归档',
-      content: `归档后孩子将不能再领取“${task.title}”`,
-      success: (res) => resolve(res.confirm)
-    })
-  })
-  if (!confirmed) {
-    return
-  }
-
-  await archiveTask({
-    familyId: currentFamily.value.familyId,
-    taskId: task.id
-  })
-  uni.showToast({ title: '任务已归档', icon: 'success' })
-  await loadHome()
-}
-
-function cycleLabel(value) {
-  return taskCycles.find((cycle) => cycle.value === value)?.label || value
-}
-
-function syncSelectedVirtualChild() {
-  if (virtualChildren.value.some((child) => child.id === selectedVirtualChildId.value)) {
-    return
-  }
-  selectedVirtualChildId.value = virtualChildren.value[0]?.id || 0
-}
-
-function selectVirtualChild(memberId) {
-  selectedVirtualChildId.value = memberId
+function selectChild(memberId) {
+  selectedChildId.value = memberId
 }
 
 async function handleProxyTaskAction(task) {
-  const child = selectedVirtualChild.value
+  const child = selectedChild.value
   if (!child) {
     uni.showToast({ title: '请先选择孩子', icon: 'none' })
     return
@@ -594,9 +412,59 @@ function taskButtonText(task) {
   const map = {
     claimable: '领取',
     claimed: '提交',
-    pending: '审核中'
+    pending: '审核中',
+    completed: '已完成'
   }
   return map[task.viewStatus] || '查看'
+}
+
+function taskStatusText(task) {
+  const map = {
+    claimable: '可领取',
+    claimed: '已领取',
+    pending: '审核中',
+    completed: '已完成'
+  }
+  return map[task.viewStatus] || '可处理'
+}
+
+function recordMatchesCycle(record, task) {
+  if (task.cycleType === 'ONCE') {
+    return true
+  }
+  const value = record.auditTime || record.submitTime
+  if (!value) {
+    return false
+  }
+  const date = new Date(value)
+  const now = new Date()
+  if (task.cycleType === 'DAILY') {
+    return date.toDateString() === now.toDateString()
+  }
+  if (task.cycleType === 'WEEKLY') {
+    return weekKey(date) === weekKey(now)
+  }
+  return false
+}
+
+function weekKey(date) {
+  const copy = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const day = copy.getDay() || 7
+  copy.setDate(copy.getDate() + 4 - day)
+  const yearStart = new Date(copy.getFullYear(), 0, 1)
+  const week = Math.ceil((((copy - yearStart) / 86400000) + 1) / 7)
+  return `${copy.getFullYear()}-${week}`
+}
+
+function scrollToSection(selector) {
+  uni.pageScrollTo({
+    selector,
+    duration: 240
+  })
+}
+
+function goTaskPage() {
+  uni.switchTab({ url: '/pages/tasks/index' })
 }
 
 function roleName(role) {
@@ -738,7 +606,8 @@ function formatTime(value) {
 
 .task-list,
 .audit-list,
-.reward-todo-list {
+.reward-todo-list,
+.proxy-task-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -747,7 +616,8 @@ function formatTime(value) {
 .task-item,
 .audit-item,
 .reward-todo-item,
-.state-block {
+.state-block,
+.proxy-panel {
   background: #fff;
   border-radius: 10px;
   padding: 16px;
@@ -810,7 +680,8 @@ function formatTime(value) {
   background: #10b981;
 }
 
-.action-btn.pending {
+.action-btn.pending,
+.action-btn.completed {
   background: #e5e7eb;
   color: #64748b;
 }
@@ -861,182 +732,12 @@ function formatTime(value) {
   text-align: center;
 }
 
-.create-panel {
-  background: #fff;
-  border-radius: 10px;
-  margin-bottom: 24px;
-  padding: 16px;
-}
-
-.manage-panel {
-  background: #fff;
-  border-radius: 10px;
-  margin-bottom: 24px;
-  padding: 16px;
-}
-
-.manage-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.manage-title {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.manage-count {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.manage-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.manage-item {
-  align-items: center;
-  border-top: 1px solid #eef2f7;
-  display: flex;
-  justify-content: space-between;
-  padding-top: 12px;
-}
-
-.manage-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.create-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.create-title,
-.create-subtitle {
-  display: block;
-}
-
-.create-title {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.create-subtitle {
-  color: #64748b;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.small-primary-btn,
-.primary-action-btn {
-  background: #2563eb;
-  border: none;
-  color: #fff;
-}
-
-.small-primary-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.create-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 16px;
-}
-
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-label {
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.form-input {
-  background: #f8fafc;
-  border-radius: 8px;
-  color: #111827;
-  font-size: 14px;
-  height: 40px;
-  padding: 0 12px;
-}
-
-.cycle-options {
-  display: flex;
-  gap: 8px;
-}
-
-.cycle-btn {
-  background: #f8fafc;
-  border: 1px solid #dbe3ef;
-  border-radius: 16px;
-  color: #475569;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.cycle-btn.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  color: #2563eb;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.plain-action-btn,
-.primary-action-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.plain-action-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-}
-
-.danger-action-btn {
-  background: #fff;
-  border: 1px solid #fecaca;
-  border-radius: 16px;
-  color: #dc2626;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
+.state-block.compact {
+  padding: 20px 16px;
 }
 
 .proxy-panel {
-  background: #fff;
-  border-radius: 10px;
-  margin-bottom: 24px;
-  padding: 16px;
+  margin-top: 24px;
 }
 
 .proxy-header {
@@ -1063,14 +764,7 @@ function formatTime(value) {
   margin-top: 4px;
 }
 
-.proxy-points {
-  color: #f59e0b;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.proxy-content,
-.proxy-task-list {
+.proxy-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1099,7 +793,24 @@ function formatTime(value) {
   color: #2563eb;
 }
 
-.state-block.compact {
-  padding: 20px 16px;
+.plain-action-btn,
+.primary-action-btn {
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 30px;
+  margin: 0;
+  padding: 0 14px;
+}
+
+.plain-action-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.primary-action-btn {
+  background: #2563eb;
+  border: none;
+  color: #fff;
 }
 </style>
