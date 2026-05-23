@@ -85,10 +85,13 @@ func TestMemberRoleHelpers(t *testing.T) {
 	if !memberCanSubmitForChild(parent, true) {
 		t.Fatal("parent should submit for virtual child")
 	}
+	if !memberCanSubmitForChild(parent, false) {
+		t.Fatal("parent should submit for real child")
+	}
 	if memberCanSubmitForChild(child, true) {
 		t.Fatal("child should not submit for virtual child through parent helper")
 	}
-	if memberCanSubmitForChild(parent, false) {
-		t.Fatal("parent should not submit for real child through this helper")
+	if memberCanSubmitForChild(child, false) {
+		t.Fatal("child should not submit for real child through parent helper")
 	}
 }

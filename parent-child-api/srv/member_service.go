@@ -100,7 +100,7 @@ func (x memberService) ListMembers(userId, familyId int64) []model.FamilyMember 
 }
 
 func memberCanSubmitForChild(operator model.FamilyMember, targetIsVirtual bool) bool {
-	return targetIsVirtual && operator.RoleType.IsParentRole()
+	return operator.RoleType.IsParentRole()
 }
 
 func virtualChildMemberInsertArgs(req model.VirtualChildCreateRequest, nickname string, operatorUserId int64) []any {
