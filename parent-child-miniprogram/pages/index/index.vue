@@ -57,14 +57,24 @@
             <view class="task-title">{{ task.title }}</view>
             <view class="task-reward">+{{ task.points }} 积分</view>
           </view>
-          <button
-            class="action-btn"
-            :class="task.viewStatus"
-            :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
-            @click="handleTaskAction(task)"
-          >
-            {{ taskButtonText(task) }}
-          </button>
+          <view class="task-action-stack">
+            <button
+              class="action-btn"
+              :class="task.viewStatus"
+              :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
+              @click="handleTaskAction(task)"
+            >
+              {{ taskButtonText(task) }}
+            </button>
+            <button
+              v-if="task.activeClaim && task.cycleType !== 'ONCE'"
+              class="plain-action-btn stop-claim-btn"
+              size="mini"
+              @click="stopRecurringTaskClaim(task)"
+            >
+              停止领取
+            </button>
+          </view>
         </view>
       </view>
     </view>
@@ -130,7 +140,6 @@
             <text class="proxy-title">代孩子完成任务</text>
             <text class="proxy-subtitle">支持真实孩子和虚拟孩子</text>
           </view>
-          <button class="plain-action-btn" size="mini" @click="goTaskPage">查看全部任务</button>
         </view>
 
         <view v-if="children.length === 0" class="state-block compact">
@@ -183,7 +192,7 @@ import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { listMembers } from '../../api/member.js'
 import { deliverReward, listRewardRecords, receiveReward, rejectReward } from '../../api/reward.js'
-import { auditTask, claimTask, listTaskRecords, listTasks, submitTask } from '../../api/task.js'
+import { auditTask, claimTask, listTaskClaims, listTaskRecords, listTasks, startTaskClaim, stopTaskClaim, submitTask } from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -194,6 +203,7 @@ const tasks = ref([])
 const claimedRecords = ref([])
 const pendingRecords = ref([])
 const approvedRecords = ref([])
+const taskClaims = ref([])
 const parentPendingRecords = ref([])
 const parentAppliedRewardRecords = ref([])
 const childDeliveredRewardRecords = ref([])
@@ -213,7 +223,9 @@ const greetingText = computed(() => {
 })
 
 const taskRows = computed(() => {
-  return tasks.value.map((task) => taskRowForRecords(task, claimedRecords.value, pendingRecords.value, approvedRecords.value))
+  return tasks.value
+    .map((task) => taskRowForRecords(task, claimedRecords.value, pendingRecords.value, approvedRecords.value, taskClaims.value))
+    .filter(Boolean)
 })
 
 const children = computed(() => {
@@ -237,7 +249,7 @@ const proxyTaskRows = computed(() => {
 })
 
 const proxyVisibleTaskRows = computed(() => {
-  return proxyTaskRows.value.slice(0, 5)
+  return proxyTaskRows.value.filter((task) => task.viewStatus !== 'completed').slice(0, 5)
 })
 
 onShow(() => {
@@ -265,15 +277,17 @@ async function loadHome(retried = false) {
     tasks.value = taskList || []
 
     if (summary.value.roleType === 'CHILD') {
-      const [claimed, pending, approved, deliveredRewards] = await Promise.all([
+      const [claimed, pending, approved, claims, deliveredRewards] = await Promise.all([
         listTaskRecords({ familyId, status: 'CLAIMED' }),
         listTaskRecords({ familyId, status: 'PENDING' }),
         listTaskRecords({ familyId, status: 'APPROVED' }),
+        listTaskClaims(familyId),
         listRewardRecords({ familyId, status: 'DELIVERED' })
       ])
       claimedRecords.value = claimed || []
       pendingRecords.value = pending || []
       approvedRecords.value = approved || []
+      taskClaims.value = claims || []
       childDeliveredRewardRecords.value = deliveredRewards || []
       parentPendingRecords.value = []
       parentAppliedRewardRecords.value = []
@@ -299,6 +313,7 @@ async function loadHome(retried = false) {
       claimedRecords.value = []
       pendingRecords.value = []
       approvedRecords.value = []
+      taskClaims.value = []
     }
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
@@ -312,28 +327,47 @@ async function loadHome(retried = false) {
   }
 }
 
-function taskRowForRecords(task, claimedRecordsValue, pendingRecordsValue, approvedRecordsValue) {
+function taskRowForRecords(task, claimedRecordsValue, pendingRecordsValue, approvedRecordsValue, taskClaimsValue = []) {
   const claimed = claimedRecordsValue.find((record) => record.taskId === task.id)
   const pending = pendingRecordsValue.find((record) => record.taskId === task.id)
   const approved = approvedRecordsValue.find((record) => record.taskId === task.id && recordMatchesCycle(record, task))
+  const activeClaim = taskClaimsValue.find((claim) => claim.taskId === task.id)
+  if (approved && task.cycleType === 'ONCE') {
+    return null
+  }
   if (pending) {
-    return { ...task, viewStatus: 'pending', record: pending }
+    return { ...task, viewStatus: 'pending', record: pending, activeClaim }
   }
   if (claimed) {
-    return { ...task, viewStatus: 'claimed', record: claimed }
+    return { ...task, viewStatus: 'claimed', record: claimed, activeClaim }
   }
   if (approved) {
-    return { ...task, viewStatus: 'completed', record: approved }
+    return { ...task, viewStatus: 'completed', record: approved, activeClaim }
   }
-  return { ...task, viewStatus: 'claimable', record: null }
+  if (activeClaim && task.cycleType !== 'ONCE') {
+    return { ...task, viewStatus: 'recurringActive', record: null, activeClaim }
+  }
+  return { ...task, viewStatus: 'claimable', record: null, activeClaim: null }
 }
 
 async function handleTaskAction(task) {
   const familyId = currentFamily.value.familyId
   if (task.viewStatus === 'claimable') {
+    if (task.cycleType !== 'ONCE') {
+      const claim = await startTaskClaim({ familyId, taskId: task.id })
+      applyTaskClaim(claim)
+      uni.showToast({ title: '已领取任务', icon: 'success' })
+      return
+    }
     const record = await claimTask({ familyId, taskId: task.id })
     applyClaimedTaskRecord(record)
     uni.showToast({ title: '已领取任务', icon: 'success' })
+    return
+  }
+  if (task.viewStatus === 'recurringActive') {
+    const record = await submitTask({ familyId, taskId: task.id })
+    applySubmittedTaskRecord(record)
+    uni.showToast({ title: '已提交审核', icon: 'success' })
     return
   }
   if (task.viewStatus === 'claimed') {
@@ -341,6 +375,28 @@ async function handleTaskAction(task) {
     applySubmittedTaskRecord(record)
     uni.showToast({ title: '已提交审核', icon: 'success' })
   }
+}
+
+async function stopRecurringTaskClaim(task) {
+  const confirmed = await new Promise((resolve) => {
+    uni.showModal({
+      title: '停止领取',
+      content: `停止后将不再把“${task.title}”作为已领取任务展示`,
+      confirmText: '停止',
+      cancelText: '取消',
+      success: (res) => resolve(res.confirm)
+    })
+  })
+  if (!confirmed) {
+    return
+  }
+
+  await stopTaskClaim({
+    familyId: currentFamily.value.familyId,
+    taskId: task.id
+  })
+  removeTaskClaim(task.id)
+  uni.showToast({ title: '已停止领取', icon: 'success' })
 }
 
 async function audit(record, approved) {
@@ -435,6 +491,21 @@ function applyClaimedTaskRecord(record) {
   summary.value = {
     ...summary.value,
     myClaimedTaskCount: (summary.value.myClaimedTaskCount || 0) + 1
+  }
+}
+
+function applyTaskClaim(claim) {
+  taskClaims.value = [
+    claim,
+    ...taskClaims.value.filter((item) => item.id !== claim.id && item.taskId !== claim.taskId)
+  ]
+}
+
+function removeTaskClaim(taskId) {
+  taskClaims.value = taskClaims.value.filter((item) => item.taskId !== taskId)
+  summary.value = {
+    ...summary.value,
+    myClaimedTaskCount: Math.max((summary.value.myClaimedTaskCount || 0) - 1, 0)
   }
 }
 
@@ -533,6 +604,7 @@ function taskButtonText(task) {
   const map = {
     claimable: '领取',
     claimed: '提交',
+    recurringActive: '提交',
     pending: '审核中',
     completed: '已完成'
   }
@@ -543,6 +615,7 @@ function taskStatusText(task) {
   const map = {
     claimable: '可领取',
     claimed: '已领取',
+    recurringActive: '已领取',
     pending: '审核中',
     completed: '已完成'
   }
@@ -757,6 +830,15 @@ function formatTime(value) {
   gap: 4px;
 }
 
+.task-action-stack {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 8px;
+  margin-left: 12px;
+}
+
 .task-title {
   color: #111827;
   font-size: 16px;
@@ -801,10 +883,20 @@ function formatTime(value) {
   background: #10b981;
 }
 
+.action-btn.recurringActive {
+  background: #10b981;
+}
+
 .action-btn.pending,
 .action-btn.completed {
   background: #e5e7eb;
   color: #64748b;
+}
+
+.stop-claim-btn {
+  font-size: 11px;
+  line-height: 26px;
+  padding: 0 10px;
 }
 
 .audit-header {
