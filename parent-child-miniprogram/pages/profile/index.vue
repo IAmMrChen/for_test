@@ -127,21 +127,12 @@
       </view>
 
       <view class="section">
-        <view class="section-title">积分流水</view>
-        <view v-if="pointLogs.length === 0" class="state-block compact">
-          <text>暂无积分流水</text>
-        </view>
-        <view v-else class="log-list">
-          <view class="log-card" v-for="log in pointLogs" :key="log.id">
-            <view class="log-main">
-              <view class="log-title-row">
-                <text class="log-title">{{ log.sourceTitle || '未命名来源' }}</text>
-                <text class="source-tag">{{ sourceName(log.sourceType) }}</text>
-              </view>
-              <text class="log-meta">{{ log.nickname || '成员' }} · {{ formatTime(log.createdAt) }}</text>
-            </view>
-            <text class="log-points" :class="{ negative: log.points < 0 }">{{ pointText(log.points) }}</text>
+        <view class="entry-card" @click="goPointLogs">
+          <view>
+            <text class="entry-title">积分流水</text>
+            <text class="entry-subtitle">查看积分收入、兑换和调整记录</text>
           </view>
+          <text class="entry-arrow">进入</text>
         </view>
       </view>
     </view>
@@ -156,14 +147,12 @@ import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
 import { createInvite } from '../../api/invite.js'
 import { createVirtualChild, createVirtualChildBindInvite, listMembers } from '../../api/member.js'
-import { listPointLogs } from '../../api/point.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
 const currentFamily = ref(null)
 const summary = ref({})
 const members = ref([])
-const pointLogs = ref([])
 const showVirtualChildForm = ref(false)
 const submittingVirtualChild = ref(false)
 const virtualChildForm = ref(defaultVirtualChildForm())
@@ -213,14 +202,12 @@ async function loadProfile(retried = false) {
   try {
     await ensureDemoLogin()
     const familyId = family.familyId
-    const [summaryData, memberList, logs] = await Promise.all([
+    const [summaryData, memberList] = await Promise.all([
       getDashboardSummary(familyId),
-      listMembers(familyId),
-      listPointLogs({ familyId })
+      listMembers(familyId)
     ])
     summary.value = summaryData || {}
     members.value = memberList || []
-    pointLogs.value = logs || []
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
       throw error
@@ -362,6 +349,10 @@ function switchFamily() {
   })
 }
 
+function goPointLogs() {
+  uni.navigateTo({ url: '/pages/points/index' })
+}
+
 function roleName(role) {
   const map = {
     OWNER: '家主',
@@ -370,22 +361,6 @@ function roleName(role) {
     CHILD: '孩子'
   }
   return map[role] || '成员'
-}
-
-function sourceName(sourceType) {
-  const map = {
-    TASK: '任务',
-    REWARD: '奖励',
-    ADJUST: '调整'
-  }
-  return map[sourceType] || '积分'
-}
-
-function pointText(points) {
-  if (points > 0) {
-    return `+${points}`
-  }
-  return `${points || 0}`
 }
 
 function formatTime(value) {
@@ -481,15 +456,14 @@ function formatTime(value) {
 
 .point-label,
 .member-score-label,
-.log-meta {
+.entry-subtitle {
   color: #64748b;
   font-size: 12px;
 }
 
 .content,
 .section,
-.member-list,
-.log-list {
+.member-list {
   display: flex;
   flex-direction: column;
 }
@@ -505,13 +479,12 @@ function formatTime(value) {
   font-weight: 700;
 }
 
-.member-list,
-.log-list {
+.member-list {
   gap: 12px;
 }
 
 .member-card,
-.log-card,
+.entry-card,
 .state-block {
   background: #fff;
   border-radius: 10px;
@@ -519,14 +492,13 @@ function formatTime(value) {
 }
 
 .member-card,
-.log-card {
+.entry-card {
   align-items: center;
   display: flex;
   justify-content: space-between;
 }
 
-.member-main,
-.log-main {
+.member-main {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -535,29 +507,36 @@ function formatTime(value) {
 }
 
 .member-name,
-.log-title {
+.entry-title {
   color: #111827;
   font-size: 15px;
   font-weight: 700;
 }
 
-.tag-row,
-.log-title-row {
+.entry-title,
+.entry-subtitle {
+  display: block;
+}
+
+.entry-arrow {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.tag-row {
   align-items: center;
   display: flex;
   gap: 6px;
 }
 
 .role-tag,
-.virtual-tag,
-.source-tag {
+.virtual-tag {
   border-radius: 4px;
   font-size: 11px;
   padding: 2px 6px;
 }
 
-.role-tag,
-.source-tag {
+.role-tag {
   background: #eff6ff;
   color: #2563eb;
 }
@@ -578,17 +557,6 @@ function formatTime(value) {
   color: #f59e0b;
   font-size: 18px;
   font-weight: 700;
-}
-
-.log-points {
-  color: #10b981;
-  font-size: 18px;
-  font-weight: 700;
-  margin-left: 12px;
-}
-
-.log-points.negative {
-  color: #ef4444;
 }
 
 .state-block {
