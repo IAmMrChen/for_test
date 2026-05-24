@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="sun-page home-page">
     <view class="navbar">
       <view class="current-family">
         <text class="greeting">{{ greetingText }}</text>
@@ -1028,6 +1028,71 @@ function formatTime(value) {
 .primary-action-btn {
   background: #2563eb;
   border: none;
+  color: #fff;
+}
+
+.home-page .navbar {
+  background: transparent;
+  padding: 8rpx 0 28rpx;
+}
+
+.home-page .greeting {
+  color: var(--sun-ink);
+  font-size: 42rpx;
+  font-weight: 800;
+}
+
+.home-page .family-name,
+.home-page .points-label {
+  color: var(--sun-muted);
+}
+
+.home-page .points-value,
+.home-page .task-reward,
+.home-page .reward-todo-meta {
+  color: #e9852c;
+}
+
+.home-page .summary-item,
+.home-page .stat-item,
+.home-page .task-item,
+.home-page .audit-item,
+.home-page .reward-todo-item,
+.home-page .state-block,
+.home-page .proxy-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.24);
+  border-radius: 28rpx;
+  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
+}
+
+.home-page .action-btn,
+.home-page .primary-action-btn,
+.home-page .btn-approve,
+.home-page .copy-btn {
+  background: var(--sun-action);
+  border: none;
+  border-radius: 999rpx;
+  color: #fff;
+}
+
+.home-page .action-btn.claimed,
+.home-page .action-btn.recurringActive {
+  background: var(--sun-mint);
+}
+
+.home-page .plain-action-btn,
+.home-page .btn-reject,
+.home-page .child-option-btn {
+  background: #eef7ff;
+  border-color: rgba(75, 159, 255, 0.22);
+  border-radius: 999rpx;
+  color: var(--sun-sky);
+}
+
+.home-page .child-option-btn.active {
+  background: var(--sun-sky);
+  border-color: var(--sun-sky);
   color: #fff;
 }
 </style>

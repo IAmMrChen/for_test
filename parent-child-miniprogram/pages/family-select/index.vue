@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="sun-page family-select-page">
     <view class="header">
       <view class="header-copy">
         <text class="title">选择家庭</text>
@@ -473,5 +473,55 @@ function roleName(roleType) {
   border: 1px solid #cbd5e1;
   color: #475569;
   margin-top: 0;
+}
+
+.family-select-page .header {
+  margin-bottom: 24rpx;
+}
+
+.family-select-page .title {
+  color: var(--sun-ink);
+  font-size: 46rpx;
+  font-weight: 800;
+}
+
+.family-select-page .subtitle {
+  color: var(--sun-muted);
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.family-select-page .entry-panel,
+.family-select-page .family-card,
+.family-select-page .state-block {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.28);
+  border-radius: 28rpx;
+  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
+}
+
+.family-select-page .create-top-btn,
+.family-select-page .empty-create-btn,
+.family-select-page .primary-action-btn {
+  background: var(--sun-action);
+  border-radius: 999rpx;
+}
+
+.family-select-page .plain-action-btn,
+.family-select-page .retry-btn {
+  background: #eef7ff;
+  border-color: rgba(75, 159, 255, 0.22);
+  border-radius: 999rpx;
+  color: var(--sun-sky);
+}
+
+.family-select-page .avatar-placeholder {
+  background: linear-gradient(135deg, #ffcf6c 0%, #ff8f5d 100%);
+  color: #fff;
+}
+
+.family-select-page .enter-btn,
+.family-select-page .text-action-btn {
+  color: var(--sun-sky);
 }
 </style>

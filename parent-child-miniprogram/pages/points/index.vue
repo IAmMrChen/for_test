@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="sun-page points-page">
     <view class="header">
       <view>
         <text class="title">积分流水</text>
@@ -314,5 +314,52 @@ function formatTime(value) {
 
 .retry-btn {
   margin-top: 12px;
+}
+
+.points-page .header {
+  margin-bottom: 28rpx;
+}
+
+.points-page .title {
+  color: var(--sun-ink);
+  font-size: 46rpx;
+  font-weight: 800;
+}
+
+.points-page .subtitle,
+.points-page .log-meta {
+  color: var(--sun-muted);
+}
+
+.points-page .log-card,
+.points-page .state-block {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.24);
+  border-radius: 28rpx;
+  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
+}
+
+.points-page .back-btn,
+.points-page .plain-action-btn,
+.points-page .filter-btn {
+  background: #eef7ff;
+  border-color: rgba(75, 159, 255, 0.22);
+  border-radius: 999rpx;
+  color: var(--sun-sky);
+}
+
+.points-page .filter-btn.active {
+  background: var(--sun-sky);
+  border-color: var(--sun-sky);
+  color: #fff;
+}
+
+.points-page .source-tag {
+  background: #eef7ff;
+  color: var(--sun-sky);
+}
+
+.points-page .log-points {
+  color: var(--sun-mint);
 }
 </style>

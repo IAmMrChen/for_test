@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="sun-page tasks-page">
     <view class="header">
       <view>
         <text class="title">任务</text>
@@ -767,5 +767,64 @@ function taskButtonText(task) {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+}
+
+.tasks-page .header {
+  margin-bottom: 28rpx;
+}
+
+.tasks-page .title {
+  color: var(--sun-ink);
+  font-size: 46rpx;
+  font-weight: 800;
+}
+
+.tasks-page .subtitle,
+.tasks-page .summary-label,
+.tasks-page .task-meta,
+.tasks-page .section-count {
+  color: var(--sun-muted);
+}
+
+.tasks-page .summary-pill,
+.tasks-page .task-card,
+.tasks-page .state-block,
+.tasks-page .create-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.24);
+  border-radius: 28rpx;
+  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
+}
+
+.tasks-page .summary-value,
+.tasks-page .task-title,
+.tasks-page .section-title,
+.tasks-page .create-title {
+  color: var(--sun-ink);
+}
+
+.tasks-page .action-btn,
+.tasks-page .primary-action-btn,
+.tasks-page .small-primary-btn {
+  background: var(--sun-action);
+  border-radius: 999rpx;
+}
+
+.tasks-page .action-btn.claimed,
+.tasks-page .action-btn.recurringActive {
+  background: var(--sun-mint);
+}
+
+.tasks-page .plain-action-btn,
+.tasks-page .cycle-btn {
+  background: #eef7ff;
+  border-color: rgba(75, 159, 255, 0.22);
+  border-radius: 999rpx;
+  color: var(--sun-sky);
+}
+
+.tasks-page .cycle-btn.active {
+  background: var(--sun-sky);
+  color: #fff;
 }
 </style>

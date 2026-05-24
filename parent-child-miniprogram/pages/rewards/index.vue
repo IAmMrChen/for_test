@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="sun-page rewards-page">
     <view class="header">
       <view>
         <text class="title">奖励</text>
@@ -756,6 +756,62 @@ function formatTime(value) {
   margin: 0;
   min-width: 64px;
   padding: 0 12px;
+}
+
+.rewards-page .header {
+  margin-bottom: 28rpx;
+}
+
+.rewards-page .title {
+  color: var(--sun-ink);
+  font-size: 46rpx;
+  font-weight: 800;
+}
+
+.rewards-page .subtitle,
+.rewards-page .summary-label,
+.rewards-page .record-meta,
+.rewards-page .reward-stock,
+.rewards-page .section-subtitle,
+.rewards-page .proxy-entry-subtitle {
+  color: var(--sun-muted);
+}
+
+.rewards-page .summary-pill,
+.rewards-page .reward-card,
+.rewards-page .record-card,
+.rewards-page .state-block,
+.rewards-page .create-panel,
+.rewards-page .proxy-entry {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.24);
+  border-radius: 28rpx;
+  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
+}
+
+.rewards-page .proxy-entry {
+  background: linear-gradient(135deg, #fff3d8 0%, #ffffff 62%);
+}
+
+.rewards-page .summary-value,
+.rewards-page .points {
+  color: #e9852c;
+}
+
+.rewards-page .exchange-btn,
+.rewards-page .primary-btn,
+.rewards-page .small-primary-btn,
+.rewards-page .primary-action-btn {
+  background: var(--sun-action);
+  border-radius: 999rpx;
+}
+
+.rewards-page .plain-btn,
+.rewards-page .plain-action-btn {
+  background: #eef7ff;
+  border-color: rgba(75, 159, 255, 0.22);
+  border-radius: 999rpx;
+  color: var(--sun-sky);
 }
 
 </style>
