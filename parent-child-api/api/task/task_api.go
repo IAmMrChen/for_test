@@ -58,6 +58,24 @@ func (x TaskApi) Claim(w http.ResponseWriter, r *http.Request, token *ux.AuthTok
 	apix.WriteData(w, srv.TaskService.ClaimTask(token.UserId, req))
 }
 
+func (x TaskApi) StartClaim(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.TaskClaimRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.TaskService.StartTaskClaim(token.UserId, req))
+}
+
+func (x TaskApi) StopClaim(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	var req model.TaskClaimRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apix.WriteError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	apix.WriteData(w, srv.TaskService.StopTaskClaim(token.UserId, req))
+}
+
 func (x TaskApi) Submit(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
 	var req model.TaskSubmitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -88,4 +106,14 @@ func (x TaskApi) Records(w http.ResponseWriter, r *http.Request, token *ux.AuthT
 		Status:   model.TaskRecordStatus(r.URL.Query().Get("status")),
 	}
 	apix.WriteData(w, srv.TaskService.ListTaskRecords(token.UserId, req))
+}
+
+func (x TaskApi) Claims(w http.ResponseWriter, r *http.Request, token *ux.AuthTokenClaims) {
+	familyId, err := strconv.ParseInt(r.URL.Query().Get("familyId"), 10, 64)
+	if err != nil || familyId == 0 {
+		apix.WriteError(w, http.StatusBadRequest, "invalid familyId")
+		return
+	}
+
+	apix.WriteData(w, srv.TaskService.ListTaskClaims(token.UserId, model.TaskClaimListRequest{FamilyId: familyId}))
 }
