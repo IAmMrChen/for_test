@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>奖励页与成员区结构草图</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f7fb;
+      color: #1e293b;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.25;
+      color: #172033;
+    }
+    .intro {
+      margin: 10px 0 24px;
+      color: #64748b;
+      line-height: 1.7;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(240px, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+    .option {
+      border: 1px solid #dbe3ef;
+      border-radius: 18px;
+      background: #fff;
+      padding: 16px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
+    }
+    .option.recommended {
+      border-color: #2563eb;
+      box-shadow: 0 16px 42px rgba(37, 99, 235, .18);
+    }
+    .label {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .option h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #172033;
+    }
+    .phone {
+      border: 1px solid #dbe3ef;
+      border-radius: 28px;
+      background: #f6f8fb;
+      padding: 14px;
+    }
+    .screen {
+      border-radius: 20px;
+      background: #fff;
+      min-height: 530px;
+      padding: 14px;
+      overflow: hidden;
+    }
+    .topbar {
+      height: 18px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+      font-size: 11px;
+    }
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #172033;
+      margin-bottom: 12px;
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 10px;
+      background: #edf2f7;
+      color: #526179;
+      text-align: center;
+      font-size: 12px;
+    }
+    .tab.active {
+      background: #2563eb;
+      color: white;
+      font-weight: 700;
+    }
+    .section {
+      border: 1px solid #edf2f7;
+      background: #fbfcff;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .section.strong {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 7px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .sub {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px solid #eef2f7;
+      padding-top: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .button {
+      border-radius: 999px;
+      background: #2563eb;
+      color: white;
+      font-size: 11px;
+      padding: 5px 10px;
+      white-space: nowrap;
+    }
+    .button.ghost {
+      background: white;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+    .mini-list {
+      display: grid;
+      gap: 6px;
+    }
+    .mini-item {
+      background: white;
+      border: 1px solid #edf2f7;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 12px;
+    }
+    .pill-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #334155;
+      font-size: 11px;
+    }
+    .note {
+      margin: 12px 0 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #475569;
+    }
+    .decision {
+      margin-top: 24px;
+      padding: 18px;
+      border-radius: 16px;
+      background: #172033;
+      color: white;
+      line-height: 1.8;
+    }
+    .decision b { color: #bfdbfe; }
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+      main { padding: 24px 14px 40px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>奖励页与成员区结构草图</h1>
+    <p class="intro">这个文件不是小程序运行预览，而是把页面抽成手机线框稿，用来讨论入口层级、长列表承载方式和成员管理动作是否自然。</p>
+
+    <div class="grid">
+      <section class="option">
+        <span class="label">现状问题</span>
+        <h2>A. 原页面继续堆叠</h2>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar"><span>9:18</span><span>98%</span></div>
+            <div class="page-title">奖励</div>
+            <div class="section">
+              <div class="section-title">待处理申请 <span>3</span></div>
+              <div class="mini-list">
+                <div class="mini-item"><b>小明申请电影票</b><div class="sub">30 积分 · 通过 / 驳回</div></div>
+              </div>
+            </div>
+            <div class="section">
+              <div class="section-title">创建奖励</div>
+              <div class="sub">名称、积分、库存表单直接露出</div>
+            </div>
+            <div class="section strong">
+              <div class="section-title">代孩子兑换奖励</div>
+              <div class="sub">选择孩子后展示全部奖励列表</div>
+              <div class="mini-list">
+                <div class="mini-item">电影票 <span class="button">代兑</span></div>
+                <div class="mini-item">玩具 <span class="button ghost">积分不足</span></div>
+                <div class="mini-item">零食 <span class="button">代兑</span></div>
+              </div>
+            </div>
+            <div class="section">
+              <div class="section-title">可兑换奖励</div>
+              <div class="sub">20 个奖励继续往下排</div>
+            </div>
+          </div>
+        </div>
+        <p class="note">主要问题：二三十个奖励时页面过长，家长和孩子视角混在一起，代兑和普通兑换争夺同一屏空间。</p>
+      </section>
+
+      <section class="option recommended">
+        <span class="label">推荐方案</span>
+        <h2>B. 主页面保留管理和入口</h2>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar"><span>9:18</span><span>98%</span></div>
+            <div class="page-title">奖励</div>
+            <div class="tabs"><div class="tab active">待处理</div><div class="tab">奖励库</div></div>
+            <div class="section strong">
+              <div class="section-title">代孩子兑换 <span class="button">进入</span></div>
+              <div class="sub">独立子页面：先选孩子，再筛选奖励，适合 20+ 奖励。</div>
+            </div>
+            <div class="section">
+              <div class="section-title">待发放奖励 <span>3</span></div>
+              <div class="mini-list">
+                <div class="mini-item"><b>小明 · 电影票</b><div class="sub">通过 / 驳回，不刷新整页</div></div>
+                <div class="mini-item"><b>小雨 · 贴纸</b><div class="sub">通过 / 驳回</div></div>
+              </div>
+            </div>
+            <div class="section">
+              <div class="section-title">奖励库 <span class="button ghost">新增</span></div>
+              <div class="sub">主页面只展示摘要，完整管理留在奖励库列表里。</div>
+              <div class="row"><span>周末电影票</span><span>30 分</span></div>
+              <div class="row"><span>拼图时间</span><span>20 分</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="note">优点：主页面短，代兑变成清晰流程；奖励库仍是家长管理中心，也不会因为奖励多导致页面失控。</p>
+      </section>
+
+      <section class="option recommended">
+        <span class="label">推荐方案</span>
+        <h2>C. 成员动作收进管理入口</h2>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar"><span>9:18</span><span>98%</span></div>
+            <div class="page-title">我的</div>
+            <div class="section">
+              <div class="section-title">家庭成员 <span class="button">管理</span></div>
+              <div class="sub">顶部不再并列“虚拟孩子 / 邀请成员”两个大块。</div>
+              <div class="mini-list">
+                <div class="mini-item"><b>家主</b><div class="sub">家长 · 当前积分 0</div></div>
+                <div class="mini-item"><b>小明</b><div class="sub">孩子 · 当前积分 120</div></div>
+                <div class="mini-item"><b>小雨</b><div class="sub">虚拟孩子 · 当前积分 80 · 邀请关联</div></div>
+              </div>
+            </div>
+            <div class="section strong">
+              <div class="section-title">成员管理页</div>
+              <div class="pill-row">
+                <span class="pill">邀请家长</span>
+                <span class="pill">邀请孩子</span>
+                <span class="pill">创建虚拟孩子</span>
+              </div>
+              <div class="sub" style="margin-top: 8px;">这些都是“新增成员”的不同方式，收在同一个管理页里更自然。</div>
+            </div>
+          </div>
+        </div>
+        <p class="note">优点：我的页只展示状态；新增、邀请、绑定统一放到成员管理动作里，避免两个按钮压在成员列表上方。</p>
+      </section>
+    </div>
+
+    <section class="decision">
+      <b>我的建议：</b>首页“代孩子完成任务”删除“查看全部任务”；奖励页采用 B，代孩子兑换奖励拆到独立子页面；我的页采用 C，家庭成员区只展示成员摘要，邀请和创建虚拟孩子进入成员管理页处理。
+    </section>
+  </main>
+</body>
+</html>

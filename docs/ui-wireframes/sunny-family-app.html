@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>亲子积分小程序晴日家庭感 UI 草图</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --sun: #ffb84d;
+      --sun-deep: #ff7a45;
+      --sky: #4b9fff;
+      --mint: #63c784;
+      --rose: #ef6b7a;
+      --ink: #2b2a28;
+      --muted: #7b8190;
+      --line: #edf0f5;
+      --paper: #ffffff;
+      --warm: #fff8ea;
+      --blue-soft: #eef7ff;
+      --green-soft: #effbf3;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(255, 184, 77, .24), transparent 28%),
+        radial-gradient(circle at 100% 6%, rgba(75, 159, 255, .18), transparent 32%),
+        linear-gradient(180deg, #fffaf0 0%, #eef7ff 54%, #f8fbff 100%);
+      color: var(--ink);
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 34px 22px 56px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(240px, 380px);
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+    .hero p {
+      margin: 12px 0 0;
+      color: #5d6472;
+      font-size: 15px;
+      line-height: 1.8;
+      max-width: 680px;
+    }
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 14px;
+      border: 1px solid rgba(255, 184, 77, .32);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .76);
+      box-shadow: 0 18px 42px rgba(43, 42, 40, .08);
+    }
+    .swatch {
+      height: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      padding: 7px;
+      font-size: 10px;
+      font-weight: 800;
+      color: rgba(43, 42, 40, .8);
+    }
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(240px, 1fr));
+      gap: 22px;
+      align-items: start;
+    }
+    .phone-wrap h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      color: #273142;
+    }
+    .phone {
+      border: 1px solid rgba(130, 145, 165, .24);
+      border-radius: 32px;
+      background: #111827;
+      padding: 9px;
+      box-shadow: 0 22px 52px rgba(20, 36, 55, .18);
+    }
+    .screen {
+      position: relative;
+      min-height: 620px;
+      border-radius: 25px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #fff7e7 0%, #eef7ff 42%, #f8fbff 100%);
+    }
+    .status {
+      height: 28px;
+      padding: 8px 18px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: rgba(43, 42, 40, .74);
+      font-weight: 700;
+    }
+    .content {
+      padding: 0 15px 78px;
+    }
+    .page-head {
+      padding: 8px 0 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .eyebrow {
+      display: block;
+      color: #7a6c55;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .title {
+      display: block;
+      color: #242a35;
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+    .subtitle {
+      display: block;
+      margin-top: 6px;
+      color: #707887;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .sun-card {
+      border: 1px solid rgba(255, 184, 77, .28);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 12px 28px rgba(43, 42, 40, .08);
+      padding: 13px;
+      margin-bottom: 12px;
+    }
+    .hero-card {
+      color: white;
+      background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 62%, #ff9868 100%);
+      border-color: rgba(255, 255, 255, .34);
+    }
+    .blue-card {
+      background: linear-gradient(135deg, #eef7ff 0%, #ffffff 100%);
+      border-color: rgba(75, 159, 255, .22);
+    }
+    .green-card {
+      background: linear-gradient(135deg, #effbf3 0%, #ffffff 100%);
+      border-color: rgba(99, 199, 132, .25);
+    }
+    .card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 900;
+      color: #2c3442;
+      margin-bottom: 8px;
+    }
+    .hero-card .card-title,
+    .hero-card .metric-main,
+    .hero-card .metric-sub { color: white; }
+    .metric-main {
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 950;
+      color: #2b2a28;
+    }
+    .metric-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #717987;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, .9);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat b {
+      display: block;
+      font-size: 19px;
+      color: #2f80ed;
+    }
+    .stat span {
+      display: block;
+      margin-top: 3px;
+      font-size: 10px;
+      color: #7b8190;
+      font-weight: 700;
+    }
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+    .row-main {
+      min-width: 0;
+    }
+    .row-title {
+      display: block;
+      color: #2c3442;
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-meta {
+      display: block;
+      margin-top: 4px;
+      color: #7b8190;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .btn {
+      min-width: 56px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      color: white;
+      background: var(--sun-deep);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+      box-shadow: 0 8px 16px rgba(255, 122, 69, .24);
+    }
+    .btn.blue { background: var(--sky); box-shadow: 0 8px 16px rgba(75, 159, 255, .18); }
+    .btn.green { background: var(--mint); box-shadow: 0 8px 16px rgba(99, 199, 132, .18); }
+    .btn.light {
+      color: #2f80ed;
+      background: #eef7ff;
+      box-shadow: none;
+      border: 1px solid rgba(75, 159, 255, .18);
+    }
+    .btn.danger {
+      background: #fff1f3;
+      color: #d95061;
+      box-shadow: none;
+      border: 1px solid rgba(239, 107, 122, .2);
+    }
+    .chip-row {
+      display: flex;
+      gap: 7px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .chip {
+      flex: 0 0 auto;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .86);
+      border: 1px solid var(--line);
+      color: #697180;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .chip.active {
+      color: #fff;
+      background: var(--sky);
+      border-color: var(--sky);
+    }
+    .form-row {
+      height: 38px;
+      border-radius: 13px;
+      background: #f7f9fc;
+      border: 1px solid var(--line);
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      color: #8a92a0;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .cycle {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-top: 8px;
+    }
+    .cycle span {
+      text-align: center;
+      padding: 8px 0;
+      border-radius: 12px;
+      background: #f7f9fc;
+      color: #747c8c;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .cycle span.active {
+      color: #fff;
+      background: var(--sun-deep);
+    }
+    .member {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+    }
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff0d6;
+      color: #b45309;
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .avatar.blue { background: #e9f4ff; color: #2f80ed; }
+    .avatar.green { background: #e9f9ef; color: #318b51; }
+    .bottom-nav {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      height: 58px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid rgba(130, 145, 165, .16);
+      box-shadow: 0 -8px 24px rgba(43, 42, 40, .08);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+    }
+    .nav-item {
+      text-align: center;
+      color: #8a92a0;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .nav-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 9px;
+      margin: 0 auto 3px;
+      border: 2px solid currentColor;
+    }
+    .nav-item.active { color: var(--sun-deep); }
+    .empty {
+      text-align: center;
+      padding: 18px 8px;
+      color: #7b8190;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #657083;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .section-note {
+      margin: 28px 0 0;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, .76);
+      border: 1px solid rgba(130, 145, 165, .18);
+      color: #596274;
+      line-height: 1.8;
+      font-size: 14px;
+    }
+    @media (max-width: 1180px) {
+      .screens { grid-template-columns: repeat(3, minmax(240px, 1fr)); }
+    }
+    @media (max-width: 880px) {
+      .hero { grid-template-columns: 1fr; }
+      .screens { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+    }
+    @media (max-width: 580px) {
+      main { padding: 22px 12px 40px; }
+      h1 { font-size: 28px; }
+      .screens { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <h1>亲子积分小程序 UI 重设草图</h1>
+        <p>方向是“晴日家庭感”：温暖、阳光、清楚。它保留管理工具的效率，同时让孩子的任务和奖励有一点积极反馈。本草图覆盖当前已实现功能，并纳入首页、奖励页、成员管理的最新调整。</p>
+      </div>
+      <div class="palette" aria-label="色彩基线">
+        <div class="swatch" style="background:#ffb84d">阳光黄</div>
+        <div class="swatch" style="background:#ff7a45;color:white">行动橙</div>
+        <div class="swatch" style="background:#4b9fff;color:white">清爽蓝</div>
+        <div class="swatch" style="background:#63c784;color:white">成长绿</div>
+        <div class="swatch" style="background:#fff8ea">暖白</div>
+      </div>
+    </section>
+
+    <section class="screens">
+      <div class="phone-wrap">
+        <h2>选择家庭</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">欢迎回来</span><span class="title">选择家庭</span><span class="subtitle">进入家庭后查看任务、积分和奖励</span></div>
+              <span class="btn">创建</span>
+            </div>
+            <div class="sun-card hero-card">
+              <div class="card-title">创建一个新家庭</div>
+              <div class="metric-sub">创建人默认昵称为家主，之后可以邀请家人加入。</div>
+              <div class="form-row" style="background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.28);color:white">家庭名称</div>
+              <div class="summary-line" style="color:white"><span>温暖小家</span><span class="btn light">确认创建</span></div>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">我的家庭</div>
+              <div class="list">
+                <div class="row"><div class="member"><span class="avatar">家</span><div><span class="row-title">晨光家庭</span><span class="row-meta">家长 · 3 位成员</span></div></div><span class="btn blue">进入</span></div>
+                <div class="row"><div class="member"><span class="avatar blue">亲</span><div><span class="row-title">周末学习组</span><span class="row-meta">家长 · 2 位成员</span></div></div><span class="btn light">进入</span></div>
+              </div>
+            </div>
+            <div class="sun-card blue-card">
+              <div class="card-title">已有邀请码？<span class="btn light">展开</span></div>
+              <span class="subtitle">邀请码作为低权重入口，不占据首屏主体。</span>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>首页，家长视角</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">晨光家庭</span><span class="title">今日看板</span><span class="subtitle">先处理孩子正在等你的事</span></div>
+              <span class="btn light">切换</span>
+            </div>
+            <div class="stats">
+              <div class="stat"><b>2</b><span>待审核</span></div>
+              <div class="stat"><b>3</b><span>待奖励</span></div>
+              <div class="stat"><b>16</b><span>可用任务</span></div>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">待审核任务</div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">小明提交阅读 30 分钟</span><span class="row-meta">+10 积分 · 今天 18:20</span></div><span class="btn green">通过</span><span class="btn danger">驳回</span></div>
+              </div>
+            </div>
+            <div class="sun-card blue-card">
+              <div class="card-title">待发放奖励</div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">小雨申请周末电影票</span><span class="row-meta">30 积分 · 等待发放</span></div><span class="btn">发放</span></div>
+              </div>
+            </div>
+            <div class="sun-card green-card">
+              <div class="card-title">代孩子完成任务</div>
+              <div class="chip-row"><span class="chip active">小明</span><span class="chip">小雨</span><span class="chip">安安</span></div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">整理书桌</span><span class="row-meta">+6 积分 · 可处理</span></div><span class="btn green">通过</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">背诵古诗</span><span class="row-meta">+8 积分 · 已领取</span></div><span class="btn green">通过</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav"><div class="nav-item active"><div class="nav-dot"></div>首页</div><div class="nav-item"><div class="nav-dot"></div>任务</div><div class="nav-item"><div class="nav-dot"></div>奖励</div><div class="nav-item"><div class="nav-dot"></div>我的</div></div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>首页，孩子视角</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">晨光家庭</span><span class="title">小明，今天也很棒</span><span class="subtitle">完成任务后可以兑换奖励</span></div>
+            </div>
+            <div class="sun-card hero-card">
+              <div class="card-title">当前积分</div>
+              <div class="metric-main">128</div>
+              <div class="metric-sub">本周已赚 32 分，还有 12 分可兑换电影票。</div>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">可执行任务<span class="btn light">任务页</span></div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">阅读 30 分钟</span><span class="row-meta">+10 积分 · 每日</span></div><span class="btn">领取</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">整理书桌</span><span class="row-meta">+6 积分 · 已领取</span></div><span class="btn blue">提交</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">背诵古诗</span><span class="row-meta">+8 积分 · 审核中</span></div><span class="btn light">等待</span></div>
+              </div>
+            </div>
+            <div class="sun-card blue-card">
+              <div class="card-title">待确认奖励</div>
+              <div class="row"><div class="row-main"><span class="row-title">周末电影票</span><span class="row-meta">已发放 · 请确认收到</span></div><span class="btn green">确认</span></div>
+            </div>
+          </div>
+          <div class="bottom-nav"><div class="nav-item active"><div class="nav-dot"></div>首页</div><div class="nav-item"><div class="nav-dot"></div>任务</div><div class="nav-item"><div class="nav-dot"></div>奖励</div><div class="nav-item"><div class="nav-dot"></div>我的</div></div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>任务页</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">任务工作台</span><span class="title">任务</span><span class="subtitle">发布、管理和领取任务</span></div>
+              <span class="btn">发布</span>
+            </div>
+            <div class="sun-card hero-card">
+              <div class="card-title">发布任务</div>
+              <div class="form-row">任务标题，例如阅读 30 分钟</div>
+              <div class="form-row">奖励积分，例如 10</div>
+              <div class="cycle"><span class="active">每日</span><span>每周</span><span>一次</span></div>
+              <div class="summary-line" style="color:white"><span>同名任务会提醒，可确认继续</span><span class="btn light">确认</span></div>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">任务管理<span>16 项</span></div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">阅读 30 分钟</span><span class="row-meta">+10 积分 · 每日</span></div><span class="btn light">编辑</span><span class="btn danger">归档</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">整理书桌</span><span class="row-meta">+6 积分 · 每日</span></div><span class="btn light">编辑</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">练琴 20 分钟</span><span class="row-meta">+12 积分 · 每周</span></div><span class="btn light">编辑</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav"><div class="nav-item"><div class="nav-dot"></div>首页</div><div class="nav-item active"><div class="nav-dot"></div>任务</div><div class="nav-item"><div class="nav-dot"></div>奖励</div><div class="nav-item"><div class="nav-dot"></div>我的</div></div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>奖励页</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">奖励商店</span><span class="title">奖励</span><span class="subtitle">兑换、发放和维护奖励库</span></div>
+              <span class="btn">新建</span>
+            </div>
+            <div class="sun-card blue-card">
+              <div class="card-title">代孩子兑换奖励<span class="btn blue">进入</span></div>
+              <span class="subtitle">奖励较多时进入独立页处理，先选孩子，再选奖励。</span>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">待发放申请<span>3</span></div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">小雨申请周末电影票</span><span class="row-meta">30 积分 · 今天 19:12</span></div><span class="btn">发放</span><span class="btn danger">驳回</span></div>
+              </div>
+            </div>
+            <div class="sun-card hero-card">
+              <div class="card-title">新建奖励</div>
+              <div class="form-row" style="background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.28);color:white">奖励名称</div>
+              <div class="form-row" style="background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.28);color:white">所需积分</div>
+              <div class="summary-line" style="color:white"><span>库存可设置为不限</span><span class="btn light">确认创建</span></div>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">奖励库<span>24 项</span></div>
+              <div class="row"><div class="row-main"><span class="row-title">周末电影票</span><span class="row-meta">30 积分 · 库存 2</span></div><span class="btn light">编辑</span></div>
+              <div class="row"><div class="row-main"><span class="row-title">拼图时间</span><span class="row-meta">20 积分 · 不限库存</span></div><span class="btn light">编辑</span></div>
+            </div>
+          </div>
+          <div class="bottom-nav"><div class="nav-item"><div class="nav-dot"></div>首页</div><div class="nav-item"><div class="nav-dot"></div>任务</div><div class="nav-item active"><div class="nav-dot"></div>奖励</div><div class="nav-item"><div class="nav-dot"></div>我的</div></div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>代孩子兑换奖励</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">代操作</span><span class="title">代孩子兑换</span><span class="subtitle">支持真实孩子和虚拟孩子</span></div>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">选择孩子</div>
+              <div class="chip-row"><span class="chip active">小明 128 分</span><span class="chip">小雨 80 分</span><span class="chip">安安 42 分</span></div>
+            </div>
+            <div class="sun-card hero-card">
+              <div class="card-title">小明可用积分</div>
+              <div class="metric-main">128</div>
+              <div class="metric-sub">筛选后只处理这个孩子的奖励兑换。</div>
+            </div>
+            <div class="chip-row"><span class="chip active">全部</span><span class="chip">可兑换</span><span class="chip">积分不足</span><span class="chip">已申请</span></div>
+            <div class="sun-card">
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">周末电影票</span><span class="row-meta">30 积分 · 库存 2</span></div><span class="btn">代兑</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">一次露营计划</span><span class="row-meta">180 积分 · 积分不足</span></div><span class="btn light">不足</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">拼图时间</span><span class="row-meta">20 积分 · 已申请</span></div><span class="btn light">待发放</span></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>积分流水</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">积分记录</span><span class="title">积分流水</span><span class="subtitle">收入、兑换和调整都在这里</span></div>
+            </div>
+            <div class="chip-row"><span class="chip active">全部</span><span class="chip">小明</span><span class="chip">小雨</span><span class="chip">安安</span></div>
+            <div class="sun-card">
+              <div class="card-title">今天</div>
+              <div class="list">
+                <div class="row"><div class="row-main"><span class="row-title">阅读 30 分钟</span><span class="row-meta">小明 · 任务 · 18:20</span></div><span class="btn green">+10</span></div>
+                <div class="row"><div class="row-main"><span class="row-title">兑换周末电影票</span><span class="row-meta">小雨 · 奖励 · 19:12</span></div><span class="btn danger">-30</span></div>
+              </div>
+            </div>
+            <div class="sun-card blue-card">
+              <div class="card-title">昨天</div>
+              <div class="row"><div class="row-main"><span class="row-title">整理书桌</span><span class="row-meta">小明 · 任务 · 昨天 20:04</span></div><span class="btn green">+6</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="phone-wrap">
+        <h2>我的与成员管理</h2>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:18</span><span>98%</span></div>
+          <div class="content">
+            <div class="page-head">
+              <div><span class="eyebrow">账户中心</span><span class="title">我的</span><span class="subtitle">家庭、成员和积分记录</span></div>
+            </div>
+            <div class="sun-card hero-card">
+              <div class="card-title">晨光家庭</div>
+              <div class="metric-main">128</div>
+              <div class="metric-sub">当前积分 · 累计获得 420</div>
+            </div>
+            <div class="sun-card blue-card">
+              <div class="card-title">积分流水<span class="btn blue">查看</span></div>
+              <span class="subtitle">查看积分收入、兑换和调整记录。</span>
+            </div>
+            <div class="sun-card">
+              <div class="card-title">家庭成员<span class="btn light">管理</span></div>
+              <div class="list">
+                <div class="row"><div class="member"><span class="avatar blue">家</span><div><span class="row-title">家主</span><span class="row-meta">家长 · 当前积分 0</span></div></div></div>
+                <div class="row"><div class="member"><span class="avatar">明</span><div><span class="row-title">小明</span><span class="row-meta">孩子 · 当前积分 128</span></div></div></div>
+                <div class="row"><div class="member"><span class="avatar green">雨</span><div><span class="row-title">小雨</span><span class="row-meta">虚拟孩子 · 当前积分 80</span></div></div><span class="btn light">关联</span></div>
+              </div>
+            </div>
+            <div class="sun-card green-card">
+              <div class="card-title">成员管理页动作</div>
+              <div class="chip-row"><span class="chip active">邀请家长</span><span class="chip">邀请孩子</span><span class="chip">创建虚拟孩子</span></div>
+              <span class="subtitle">新增成员相关动作统一收进管理页，不挤占我的页。</span>
+            </div>
+          </div>
+          <div class="bottom-nav"><div class="nav-item"><div class="nav-dot"></div>首页</div><div class="nav-item"><div class="nav-dot"></div>任务</div><div class="nav-item"><div class="nav-dot"></div>奖励</div><div class="nav-item active"><div class="nav-dot"></div>我的</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="section-note">
+      设计结论：首页承担今日看板，不进入完整管理；任务页承担任务工作台；奖励页承担奖励商店和奖励库，代孩子兑换进入独立页面；我的页承担账户与成员摘要，成员新增和邀请进入成员管理页面。后续实现时优先抽公共样式变量、按钮、卡片、筛选胶囊和空状态，减少每个页面重复写一套视觉规则。
+    </section>
+  </main>
+</body>
+</html>
