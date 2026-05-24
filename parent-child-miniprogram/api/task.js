@@ -14,9 +14,32 @@ export function listTaskRecords(params) {
   })
 }
 
+export function listTaskClaims(familyId) {
+  return request({
+    url: '/api/task/claims',
+    data: { familyId }
+  })
+}
+
 export function claimTask(data) {
   return request({
     url: '/api/task/claim',
+    method: 'POST',
+    data
+  })
+}
+
+export function startTaskClaim(data) {
+  return request({
+    url: '/api/task/startClaim',
+    method: 'POST',
+    data
+  })
+}
+
+export function stopTaskClaim(data) {
+  return request({
+    url: '/api/task/stopClaim',
     method: 'POST',
     data
   })

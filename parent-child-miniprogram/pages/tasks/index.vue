@@ -99,14 +99,24 @@
               <text class="task-title">{{ task.title }}</text>
               <text class="task-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</text>
             </view>
-            <button
-              class="action-btn"
-              :class="task.viewStatus"
-              :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
-              @click="handleTaskAction(task)"
-            >
-              {{ taskButtonText(task) }}
-            </button>
+            <view class="child-task-actions">
+              <button
+                class="action-btn"
+                :class="task.viewStatus"
+                :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
+                @click="handleTaskAction(task)"
+              >
+                {{ taskButtonText(task) }}
+              </button>
+              <button
+                v-if="task.activeClaim && task.cycleType !== 'ONCE'"
+                class="plain-action-btn"
+                size="mini"
+                @click="stopRecurringTaskClaim(task)"
+              >
+                停止领取
+              </button>
+            </view>
           </view>
         </view>
       </view>
@@ -120,7 +130,18 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
-import { archiveTask, claimTask, createTask, listTaskRecords, listTasks, submitTask, updateTask } from '../../api/task.js'
+import {
+  archiveTask,
+  claimTask,
+  createTask,
+  listTaskClaims,
+  listTaskRecords,
+  listTasks,
+  startTaskClaim,
+  stopTaskClaim,
+  submitTask,
+  updateTask
+} from '../../api/task.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -131,6 +152,7 @@ const tasks = ref([])
 const claimedRecords = ref([])
 const pendingRecords = ref([])
 const approvedRecords = ref([])
+const taskClaims = ref([])
 const showTaskForm = ref(false)
 const submittingTask = ref(false)
 const taskForm = ref(defaultTaskForm())
@@ -154,17 +176,24 @@ const taskRows = computed(() => {
     const claimed = claimedRecords.value.find((record) => record.taskId === task.id)
     const pending = pendingRecords.value.find((record) => record.taskId === task.id)
     const approved = approvedRecords.value.find((record) => record.taskId === task.id && recordMatchesCycle(record, task))
+    const activeClaim = taskClaims.value.find((claim) => claim.taskId === task.id)
+    if (approved && task.cycleType === 'ONCE') {
+      return null
+    }
     if (pending) {
-      return { ...task, viewStatus: 'pending', record: pending }
+      return { ...task, viewStatus: 'pending', record: pending, activeClaim }
     }
     if (claimed) {
-      return { ...task, viewStatus: 'claimed', record: claimed }
+      return { ...task, viewStatus: 'claimed', record: claimed, activeClaim }
     }
     if (approved) {
-      return { ...task, viewStatus: 'completed', record: approved }
+      return { ...task, viewStatus: 'completed', record: approved, activeClaim }
     }
-    return { ...task, viewStatus: 'claimable', record: null }
-  })
+    if (activeClaim && task.cycleType !== 'ONCE') {
+      return { ...task, viewStatus: 'recurringActive', record: null, activeClaim }
+    }
+    return { ...task, viewStatus: 'claimable', record: null, activeClaim: null }
+  }).filter(Boolean)
 })
 
 onShow(() => {
@@ -192,18 +221,21 @@ async function loadTaskPage(retried = false) {
     tasks.value = taskList || []
 
     if (summary.value.roleType === 'CHILD') {
-      const [claimed, pending, approved] = await Promise.all([
+      const [claimed, pending, approved, claims] = await Promise.all([
         listTaskRecords({ familyId, status: 'CLAIMED' }),
         listTaskRecords({ familyId, status: 'PENDING' }),
-        listTaskRecords({ familyId, status: 'APPROVED' })
+        listTaskRecords({ familyId, status: 'APPROVED' }),
+        listTaskClaims(familyId)
       ])
       claimedRecords.value = claimed || []
       pendingRecords.value = pending || []
       approvedRecords.value = approved || []
+      taskClaims.value = claims || []
     } else {
       claimedRecords.value = []
       pendingRecords.value = []
       approvedRecords.value = []
+      taskClaims.value = []
     }
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
@@ -361,9 +393,21 @@ async function archiveExistingTask(task) {
 async function handleTaskAction(task) {
   const familyId = currentFamily.value.familyId
   if (task.viewStatus === 'claimable') {
+    if (task.cycleType !== 'ONCE') {
+      const claim = await startTaskClaim({ familyId, taskId: task.id })
+      applyTaskClaim(claim)
+      uni.showToast({ title: '已领取任务', icon: 'success' })
+      return
+    }
     const record = await claimTask({ familyId, taskId: task.id })
     applyClaimedTaskRecord(record)
     uni.showToast({ title: '已领取任务', icon: 'success' })
+    return
+  }
+  if (task.viewStatus === 'recurringActive') {
+    const record = await submitTask({ familyId, taskId: task.id })
+    applySubmittedTaskRecord(record)
+    uni.showToast({ title: '已提交审核', icon: 'success' })
     return
   }
   if (task.viewStatus === 'claimed') {
@@ -371,6 +415,39 @@ async function handleTaskAction(task) {
     applySubmittedTaskRecord(record)
     uni.showToast({ title: '已提交审核', icon: 'success' })
   }
+}
+
+async function stopRecurringTaskClaim(task) {
+  const confirmed = await new Promise((resolve) => {
+    uni.showModal({
+      title: '停止领取',
+      content: `停止后将不再把“${task.title}”作为已领取任务展示`,
+      confirmText: '停止',
+      cancelText: '取消',
+      success: (res) => resolve(res.confirm)
+    })
+  })
+  if (!confirmed) {
+    return
+  }
+
+  await stopTaskClaim({
+    familyId: currentFamily.value.familyId,
+    taskId: task.id
+  })
+  removeTaskClaim(task.id)
+  uni.showToast({ title: '已停止领取', icon: 'success' })
+}
+
+function applyTaskClaim(claim) {
+  taskClaims.value = [
+    claim,
+    ...taskClaims.value.filter((item) => item.id !== claim.id && item.taskId !== claim.taskId)
+  ]
+}
+
+function removeTaskClaim(taskId) {
+  taskClaims.value = taskClaims.value.filter((item) => item.taskId !== taskId)
 }
 
 function applyClaimedTaskRecord(record) {
@@ -424,6 +501,7 @@ function taskButtonText(task) {
   const map = {
     claimable: '领取',
     claimed: '提交',
+    recurringActive: '提交',
     pending: '审核中',
     completed: '已完成'
   }
@@ -543,6 +621,15 @@ function taskButtonText(task) {
   margin-left: 12px;
 }
 
+.child-task-actions {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 8px;
+  margin-left: 12px;
+}
+
 .action-btn,
 .plain-action-btn,
 .primary-action-btn,
@@ -564,6 +651,10 @@ function taskButtonText(task) {
 }
 
 .action-btn.claimed {
+  background: #10b981;
+}
+
+.action-btn.recurringActive {
   background: #10b981;
 }
 
