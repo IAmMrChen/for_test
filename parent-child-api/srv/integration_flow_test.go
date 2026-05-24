@@ -110,6 +110,7 @@ func cleanupIntegrationFamily(t *testing.T, familyId int64) {
 	resx.Db.Main.MustExecute("DELETE FROM reward_records WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM rewards WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM task_records WHERE family_id=@p1", familyId)
+	resx.Db.Main.MustExecute("DELETE FROM task_claims WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM tasks WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM family_child_bind_invites WHERE family_id=@p1", familyId)
 	resx.Db.Main.MustExecute("DELETE FROM family_invites WHERE family_id=@p1", familyId)
@@ -235,6 +236,23 @@ func ensureIntegrationSchema(t *testing.T) {
 	}
 	if !integrationIndexExists("task_records", "idx_family_status") {
 		resx.Db.Main.MustExecute("CREATE INDEX idx_family_status ON task_records(family_id, status)")
+	}
+
+	if !integrationTableExists("task_claims") {
+		resx.Db.Main.MustExecute(`
+			CREATE TABLE task_claims (
+				id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+				family_id BIGINT UNSIGNED NOT NULL,
+				task_id BIGINT UNSIGNED NOT NULL,
+				member_id BIGINT UNSIGNED NOT NULL,
+				status ENUM('ACTIVE', 'STOPPED') NOT NULL DEFAULT 'ACTIVE',
+				claimed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				stopped_at DATETIME DEFAULT NULL,
+				PRIMARY KEY (id),
+				UNIQUE KEY uk_task_claim_member (task_id, member_id),
+				KEY idx_claim_family_member_status (family_id, member_id, status)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		`)
 	}
 
 	if !integrationTableExists("point_logs") {

@@ -212,6 +212,11 @@ func TestIntegrationDailyTaskRejectsSameDayEffectiveRecord(t *testing.T) {
 		CycleType: model.TaskCycleTypeDaily,
 	})
 
+	TaskService.StartTaskClaim(childUserId, model.TaskClaimRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+
 	first := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
 		FamilyId: familyId,
 		TaskId:   task.Id,
@@ -263,6 +268,11 @@ func TestIntegrationDailyTaskAllowsRetryAfterRejected(t *testing.T) {
 		CycleType: model.TaskCycleTypeDaily,
 	})
 
+	TaskService.StartTaskClaim(childUserId, model.TaskClaimRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+
 	first := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
 		FamilyId: familyId,
 		TaskId:   task.Id,
@@ -278,5 +288,78 @@ func TestIntegrationDailyTaskAllowsRetryAfterRejected(t *testing.T) {
 	})
 	if second.Status != model.TaskRecordStatusClaimed {
 		t.Fatalf("second status = %s, want CLAIMED", second.Status)
+	}
+}
+
+func TestIntegrationRecurringTaskClaimCanSubmitAndStop(t *testing.T) {
+	if os.Getenv("PARENT_CHILD_DB_INTEGRATION") != "1" {
+		t.Skip("set PARENT_CHILD_DB_INTEGRATION=1 to run database integration flow")
+	}
+
+	resx.InitDb(resx.Conf.DB)
+	ensureIntegrationSchema(t)
+
+	seed := time.Now().UnixMilli()
+	ownerUserId := seed + 700
+	childUserId := seed + 701
+
+	family := FamilyService.CreateFamily(ownerUserId, model.FamilyCreateRequest{
+		Name:     fmt.Sprintf("recurring-claim-family-%d", seed),
+		Nickname: "owner",
+	})
+	familyId := family.Family.Id
+	t.Cleanup(func() {
+		cleanupIntegrationFamily(t, familyId)
+	})
+
+	invite := InviteService.CreateInvite(ownerUserId, model.FamilyInviteCreateRequest{
+		FamilyId:   familyId,
+		TargetRole: model.FamilyRoleChild,
+	})
+	child := InviteService.AcceptInvite(childUserId, invite.Token)
+
+	task := TaskService.CreateTask(ownerUserId, model.TaskCreateRequest{
+		FamilyId:  familyId,
+		Title:     "Daily reading",
+		Points:    3,
+		CycleType: model.TaskCycleTypeDaily,
+	})
+
+	claim := TaskService.StartTaskClaim(childUserId, model.TaskClaimRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	if claim.MemberId != child.Id || claim.Status != model.TaskClaimStatusActive {
+		t.Fatalf("claim = %+v, want child member %d active", claim, child.Id)
+	}
+
+	claims := TaskService.ListTaskClaims(childUserId, model.TaskClaimListRequest{
+		FamilyId: familyId,
+	})
+	if len(claims) != 1 || claims[0].TaskId != task.Id {
+		t.Fatalf("claims = %+v, want one active task claim", claims)
+	}
+
+	record := TaskService.SubmitTask(childUserId, model.TaskSubmitRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	if record.Status != model.TaskRecordStatusPending {
+		t.Fatalf("record status = %s, want PENDING", record.Status)
+	}
+
+	stopped := TaskService.StopTaskClaim(childUserId, model.TaskClaimRequest{
+		FamilyId: familyId,
+		TaskId:   task.Id,
+	})
+	if stopped.Status != model.TaskClaimStatusStopped {
+		t.Fatalf("stopped status = %s, want STOPPED", stopped.Status)
+	}
+
+	claims = TaskService.ListTaskClaims(childUserId, model.TaskClaimListRequest{
+		FamilyId: familyId,
+	})
+	if len(claims) != 0 {
+		t.Fatalf("claims after stop = %+v, want empty", claims)
 	}
 }
