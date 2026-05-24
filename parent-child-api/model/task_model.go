@@ -30,6 +30,13 @@ const (
 	TaskRecordStatusRejected TaskRecordStatus = "REJECTED"
 )
 
+type TaskClaimStatus string
+
+const (
+	TaskClaimStatusActive  TaskClaimStatus = "ACTIVE"
+	TaskClaimStatusStopped TaskClaimStatus = "STOPPED"
+)
+
 func (x TaskRecordStatus) CanAudit() bool {
 	return x == TaskRecordStatusPending
 }
@@ -76,6 +83,10 @@ type TaskArchiveRequest struct {
 	TaskId   int64 `json:"taskId"`
 }
 
+type TaskClaimListRequest struct {
+	FamilyId int64 `json:"familyId"`
+}
+
 type TaskListRequest struct {
 	FamilyId int64 `json:"familyId"`
 }
@@ -116,6 +127,24 @@ type TaskRecord struct {
 	AuditTime    *time.Time       `json:"auditTime"`
 	AuditBy      *int64           `json:"auditBy"`
 	AuditRemark  string           `json:"auditRemark"`
+}
+
+type TaskClaim struct {
+	Id        int64           `json:"id"`
+	FamilyId  int64           `json:"familyId"`
+	TaskId    int64           `json:"taskId"`
+	MemberId  int64           `json:"memberId"`
+	Status    TaskClaimStatus `json:"status"`
+	ClaimedAt time.Time       `json:"claimedAt"`
+	StoppedAt *time.Time      `json:"stoppedAt"`
+}
+
+type TaskClaimListItem struct {
+	Id       int64           `json:"id"`
+	FamilyId int64           `json:"familyId"`
+	TaskId   int64           `json:"taskId"`
+	MemberId int64           `json:"memberId"`
+	Status   TaskClaimStatus `json:"status"`
 }
 
 type TaskRecordListItem struct {

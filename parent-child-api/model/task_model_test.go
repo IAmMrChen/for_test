@@ -34,3 +34,12 @@ func TestTaskCycleTypeValid(t *testing.T) {
 		t.Fatal("unknown cycle type should be invalid")
 	}
 }
+
+func TestTaskClaimStatusValues(t *testing.T) {
+	if TaskClaimStatusActive != "ACTIVE" {
+		t.Fatalf("active status = %s, want ACTIVE", TaskClaimStatusActive)
+	}
+	if TaskClaimStatusStopped != "STOPPED" {
+		t.Fatalf("stopped status = %s, want STOPPED", TaskClaimStatusStopped)
+	}
+}

@@ -61,6 +61,17 @@ erDiagram
         datetime created_at
     }
 
+    %% 循环任务领取关系表：记录孩子对循环任务的持续领取状态
+    task_claims {
+        bigint id PK "自增ID"
+        bigint family_id FK
+        bigint task_id FK "关联tasks.id"
+        bigint member_id FK "孩子成员ID"
+        varchar status "领取状态: ACTIVE(持续领取中), STOPPED(已停止领取)"
+        datetime claimed_at "领取时间"
+        datetime stopped_at "停止领取时间"
+    }
+
     %% 奖品库表
     rewards {
         bigint id PK "自增ID"
@@ -107,6 +118,8 @@ erDiagram
     families ||--o{ rewards : "offers"
     family_members ||--o{ task_records : "executes"
     tasks ||--o{ task_records : "instantiates"
+    family_members ||--o{ task_claims : "claims"
+    tasks ||--o{ task_claims : "is_claimed"
     family_members ||--o{ reward_records : "redeems"
     rewards ||--o{ reward_records : "instantiates"
     family_members ||--o{ point_logs : "has_logs"

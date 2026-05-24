@@ -89,6 +89,21 @@ CREATE TABLE IF NOT EXISTS `task_records` (
   KEY `idx_family_status` (`family_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务执行记录表';
 
+-- 5.1. 循环任务领取关系表 (Task Claims)
+-- 记录孩子对每日/每周循环任务的持续领取状态
+CREATE TABLE IF NOT EXISTS `task_claims` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '领取关系ID',
+  `family_id` BIGINT UNSIGNED NOT NULL COMMENT '家庭ID',
+  `task_id` BIGINT UNSIGNED NOT NULL COMMENT '任务ID',
+  `member_id` BIGINT UNSIGNED NOT NULL COMMENT '孩子成员ID',
+  `status` ENUM('ACTIVE', 'STOPPED') NOT NULL DEFAULT 'ACTIVE' COMMENT '领取状态: ACTIVE-持续领取中, STOPPED-已停止领取',
+  `claimed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '领取时间',
+  `stopped_at` DATETIME DEFAULT NULL COMMENT '停止领取时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_task_claim_member` (`task_id`, `member_id`),
+  KEY `idx_claim_family_member_status` (`family_id`, `member_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='循环任务领取关系表';
+
 -- 6. 奖品库表 (Rewards)
 -- 定义家庭内的奖品
 CREATE TABLE IF NOT EXISTS `rewards` (
