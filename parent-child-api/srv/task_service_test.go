@@ -83,6 +83,23 @@ func TestTaskRecordCycleCondition(t *testing.T) {
 	}
 }
 
+func TestRecurringTaskRequiresActiveClaim(t *testing.T) {
+	task := model.Task{CycleType: model.TaskCycleTypeDaily}
+	if !taskNeedsActiveClaim(task) {
+		t.Fatal("daily task should require active claim")
+	}
+
+	task.CycleType = model.TaskCycleTypeWeekly
+	if !taskNeedsActiveClaim(task) {
+		t.Fatal("weekly task should require active claim")
+	}
+
+	task.CycleType = model.TaskCycleTypeOnce
+	if taskNeedsActiveClaim(task) {
+		t.Fatal("once task should not require active claim")
+	}
+}
+
 func TestResolveSubmitMemberRejectsMissingFamily(t *testing.T) {
 	resx.Db = nil
 

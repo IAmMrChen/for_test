@@ -177,6 +177,9 @@ func (x taskService) SubmitTask(operatorUserId int64, req model.TaskSubmitReques
 
 	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
 	task := x.loadActiveTask(req.FamilyId, req.TaskId)
+	if taskNeedsActiveClaim(task) {
+		x.ensureTaskClaimForSubmit(operatorUserId, req.FamilyId, task.Id, target.Id)
+	}
 	x.requireNoEffectiveTaskRecord(req.FamilyId, task, target.Id)
 	submitRemark := strings.TrimSpace(req.SubmitRemark)
 
@@ -259,6 +262,137 @@ func (x taskService) resolveTaskTargetMember(operatorUserId, familyId, memberId 
 		panic(fmt.Errorf("only child can submit task"))
 	}
 	return target
+}
+
+func taskNeedsActiveClaim(task model.Task) bool {
+	return task.CycleType == model.TaskCycleTypeDaily || task.CycleType == model.TaskCycleTypeWeekly
+}
+
+func (x taskService) StartTaskClaim(operatorUserId int64, req model.TaskClaimRequest) model.TaskClaim {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.TaskId == 0 {
+		panic(fmt.Errorf("task id is required"))
+	}
+
+	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
+	task := x.loadActiveTask(req.FamilyId, req.TaskId)
+	if !taskNeedsActiveClaim(task) {
+		panic(fmt.Errorf("only recurring task can start claim"))
+	}
+	x.startTaskClaimForTarget(req.FamilyId, task.Id, target.Id)
+	return x.loadTaskClaim(req.FamilyId, task.Id, target.Id)
+}
+
+func (x taskService) StopTaskClaim(operatorUserId int64, req model.TaskClaimRequest) model.TaskClaim {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+	if req.TaskId == 0 {
+		panic(fmt.Errorf("task id is required"))
+	}
+
+	target := x.resolveTaskTargetMember(operatorUserId, req.FamilyId, req.MemberId)
+	task := x.loadActiveTask(req.FamilyId, req.TaskId)
+	if !taskNeedsActiveClaim(task) {
+		panic(fmt.Errorf("only recurring task can stop claim"))
+	}
+
+	affected := resx.Db.Main.MustExecute(`
+		UPDATE task_claims
+		SET status=@p1, stopped_at=NOW()
+		WHERE family_id=@p2 AND task_id=@p3 AND member_id=@p4 AND status=@p5
+	`, model.TaskClaimStatusStopped, req.FamilyId, task.Id, target.Id, model.TaskClaimStatusActive)
+	if affected != 1 {
+		panic(fmt.Errorf("active task claim not found"))
+	}
+	return x.loadTaskClaim(req.FamilyId, task.Id, target.Id)
+}
+
+func (x taskService) ListTaskClaims(userId int64, req model.TaskClaimListRequest) []model.TaskClaimListItem {
+	if req.FamilyId == 0 {
+		panic(fmt.Errorf("family id is required"))
+	}
+
+	operator := MemberService.LoadActiveMember(userId, req.FamilyId)
+	if operator == nil {
+		panic(fmt.Errorf("permission denied"))
+	}
+
+	sql := `
+		SELECT id
+			, family_id
+			, task_id
+			, member_id
+			, status
+		FROM task_claims
+		WHERE family_id=@p1 AND status=@p2
+	`
+	args := []any{req.FamilyId, model.TaskClaimStatusActive}
+	if !operator.RoleType.IsParentRole() {
+		sql += " AND member_id=@p3"
+		args = append(args, operator.Id)
+	}
+	sql += " ORDER BY id DESC"
+
+	return resx.Db.Main.MustListOf(model.TaskClaimListItem{}, sql, args...).([]model.TaskClaimListItem)
+}
+
+func (x taskService) ensureTaskClaimForSubmit(operatorUserId, familyId, taskId, memberId int64) {
+	operator := MemberService.LoadActiveMember(operatorUserId, familyId)
+	if operator == nil {
+		panic(fmt.Errorf("permission denied"))
+	}
+	if operator.Id == memberId {
+		x.requireActiveTaskClaim(familyId, taskId, memberId)
+		return
+	}
+	x.startTaskClaimForTarget(familyId, taskId, memberId)
+}
+
+func (x taskService) requireActiveTaskClaim(familyId, taskId, memberId int64) {
+	const sql = `
+		SELECT COUNT(1)
+		FROM task_claims
+		WHERE family_id=@p1
+			AND task_id=@p2
+			AND member_id=@p3
+			AND status=@p4
+	`
+	count, ok := resx.Db.Main.MustScalarInt(sql, familyId, taskId, memberId, model.TaskClaimStatusActive)
+	if !ok || count == nil || *count == 0 {
+		panic(fmt.Errorf("task claim is required"))
+	}
+}
+
+func (x taskService) startTaskClaimForTarget(familyId, taskId, memberId int64) {
+	const sql = `
+		INSERT INTO task_claims(family_id, task_id, member_id, status, claimed_at, stopped_at)
+		VALUES(@p1, @p2, @p3, @p4, NOW(), NULL)
+		ON DUPLICATE KEY UPDATE status=@p4, claimed_at=NOW(), stopped_at=NULL
+	`
+	resx.Db.Main.MustExecute(sql, familyId, taskId, memberId, model.TaskClaimStatusActive)
+}
+
+func (x taskService) loadTaskClaim(familyId, taskId, memberId int64) model.TaskClaim {
+	const sql = `
+		SELECT id
+			, family_id
+			, task_id
+			, member_id
+			, status
+			, claimed_at
+			, stopped_at
+		FROM task_claims
+		WHERE family_id=@p1 AND task_id=@p2 AND member_id=@p3
+	`
+	claim := &model.TaskClaim{}
+	ok := resx.Db.Main.MustGetStruct(claim, sql, familyId, taskId, memberId)
+	if !ok {
+		panic(fmt.Errorf("task claim not found"))
+	}
+	return *claim
 }
 
 func taskRecordCycleCondition(cycleType model.TaskCycleType) string {
