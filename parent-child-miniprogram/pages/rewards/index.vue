@@ -44,89 +44,54 @@
         </view>
       </view>
 
-      <view v-if="isParentRole" class="create-panel">
-        <view class="create-header">
-          <view>
-            <text class="create-title">新建奖励</text>
-            <text class="create-subtitle">创建孩子可以用积分兑换的奖励</text>
-          </view>
-          <button v-if="!showRewardForm" class="small-primary-btn" size="mini" @click="openRewardForm">新建</button>
+      <view v-if="isParentRole" class="proxy-entry" @click="goRewardProxy">
+        <view>
+          <text class="proxy-entry-title">代孩子兑换奖励</text>
+          <text class="proxy-entry-subtitle">为孩子选择奖励并直接提交兑换申请</text>
         </view>
-
-        <view v-if="showRewardForm" class="create-form">
-          <view class="form-row">
-            <text class="form-label">奖励名称</text>
-            <input v-model.trim="rewardForm.name" class="form-input" placeholder="例如：周末电影票" />
-          </view>
-          <view class="form-row">
-            <text class="form-label">所需积分</text>
-            <input v-model="rewardForm.pointsCost" class="form-input" type="number" placeholder="30" />
-          </view>
-          <view class="form-row">
-            <text class="form-label">库存</text>
-            <input v-model="rewardForm.stock" class="form-input" type="number" placeholder="0" />
-            <text class="form-hint">库存填 0 表示不限库存</text>
-          </view>
-          <view class="form-actions">
-            <button class="plain-action-btn" size="mini" :disabled="submittingReward" @click="cancelRewardForm">取消</button>
-            <button class="primary-action-btn" size="mini" :disabled="submittingReward" @click="createNewReward">
-              {{ submittingReward ? '创建中' : '确认创建' }}
-            </button>
-          </view>
-        </view>
-      </view>
-
-      <view v-if="isParentRole" class="proxy-panel">
-        <view class="proxy-header">
-          <view>
-            <text class="proxy-title">代孩子兑换奖励</text>
-            <text class="proxy-subtitle">仅支持虚拟孩子</text>
-          </view>
-          <text v-if="selectedRewardVirtualChild" class="proxy-points">{{ selectedRewardVirtualChild.currentPoints || 0 }} 积分</text>
-        </view>
-
-        <view v-if="virtualChildren.length === 0" class="state-block compact">
-          <text>暂无虚拟孩子，请先在个人页创建</text>
-        </view>
-        <view v-else class="proxy-content">
-          <view class="child-options">
-            <button
-              v-for="child in virtualChildren"
-              :key="child.id"
-              class="child-option-btn"
-              :class="{ active: selectedRewardVirtualChildId === child.id }"
-              size="mini"
-              @click="selectRewardVirtualChild(child.id)"
-            >
-              {{ child.nickname }}
-            </button>
-          </view>
-
-          <view class="reward-list">
-            <view class="reward-card" v-for="reward in proxyRewardRows" :key="reward.id">
-              <view class="reward-info">
-                <text class="reward-name">{{ reward.name }}</text>
-                <text class="reward-stock">{{ stockText(reward.stock) }}</text>
-              </view>
-              <view class="reward-side">
-                <text class="points">{{ reward.pointsCost }} 积分</text>
-                <button
-                  class="exchange-btn"
-                  size="mini"
-                  :class="reward.actionStatus"
-                  :disabled="reward.actionStatus !== 'available' || submittingProxyRewardId === reward.id"
-                  @click="applyProxyReward(reward)"
-                >
-                  {{ proxyRewardButtonText(reward) }}
-                </button>
-              </view>
-            </view>
-          </view>
-        </view>
+        <button class="small-primary-btn" size="mini" @click.stop="goRewardProxy">进入</button>
       </view>
 
       <view class="section">
-        <view class="section-title">可兑换奖励</view>
+        <view class="section-heading">
+          <view>
+            <text class="section-title">可兑换奖励</text>
+            <text v-if="isParentRole" class="section-subtitle">奖励库</text>
+          </view>
+          <button v-if="isParentRole && !showRewardForm" class="small-primary-btn" size="mini" @click="openRewardForm">新建</button>
+        </view>
+
+        <view v-if="isParentRole && showRewardForm" class="create-panel">
+          <view class="create-header">
+            <view>
+              <text class="create-title">{{ editingRewardId ? '编辑奖励' : '新建奖励' }}</text>
+              <text class="create-subtitle">创建孩子可以用积分兑换的奖励</text>
+            </view>
+          </view>
+
+          <view class="create-form">
+            <view class="form-row">
+              <text class="form-label">奖励名称</text>
+              <input v-model.trim="rewardForm.name" class="form-input" placeholder="例如：周末电影票" />
+            </view>
+            <view class="form-row">
+              <text class="form-label">所需积分</text>
+              <input v-model="rewardForm.pointsCost" class="form-input" type="number" placeholder="30" />
+            </view>
+            <view class="form-row">
+              <text class="form-label">库存</text>
+              <input v-model="rewardForm.stock" class="form-input" type="number" placeholder="0" />
+              <text class="form-hint">库存填 0 表示不限库存</text>
+            </view>
+            <view class="form-actions">
+              <button class="plain-action-btn" size="mini" :disabled="submittingReward" @click="cancelRewardForm">取消</button>
+              <button class="primary-action-btn" size="mini" :disabled="submittingReward" @click="createNewReward">
+                {{ submittingReward ? '保存中' : '确认保存' }}
+              </button>
+            </view>
+          </view>
+        </view>
+
         <view v-if="rewards.length === 0" class="state-block compact">
           <text>暂无可兑换奖励</text>
         </view>
@@ -156,6 +121,7 @@
           </view>
         </view>
       </view>
+
     </view>
   </view>
 </template>
@@ -177,7 +143,6 @@ import {
   rejectReward,
   updateReward
 } from '../../api/reward.js'
-import { listMembers } from '../../api/member.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
@@ -190,9 +155,6 @@ const showRewardForm = ref(false)
 const submittingReward = ref(false)
 const rewardForm = ref(defaultRewardForm())
 const editingRewardId = ref(0)
-const members = ref([])
-const selectedRewardVirtualChildId = ref(0)
-const submittingProxyRewardId = ref(0)
 
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
 const isChild = computed(() => roleType.value === 'CHILD')
@@ -210,35 +172,6 @@ const rewardRows = computed(() => {
       return { ...reward, actionStatus: 'soldout' }
     }
     if (currentPoints.value < reward.pointsCost) {
-      return { ...reward, actionStatus: 'insufficient' }
-    }
-    return { ...reward, actionStatus: 'available' }
-  })
-})
-
-const virtualChildren = computed(() => {
-  return members.value.filter((member) => member.roleType === 'CHILD' && member.isVirtual)
-})
-
-const selectedRewardVirtualChild = computed(() => {
-  return virtualChildren.value.find((member) => member.id === selectedRewardVirtualChildId.value) || null
-})
-
-const proxyRewardRows = computed(() => {
-  const child = selectedRewardVirtualChild.value
-  if (!child) {
-    return []
-  }
-
-  return rewards.value.map((reward) => {
-    const pending = appliedRecords.value.find((record) => record.rewardId === reward.id && record.memberId === child.id)
-    if (pending) {
-      return { ...reward, actionStatus: 'applied' }
-    }
-    if (reward.stock === 0) {
-      return { ...reward, actionStatus: 'soldout' }
-    }
-    if ((child.currentPoints || 0) < reward.pointsCost) {
       return { ...reward, actionStatus: 'insufficient' }
     }
     return { ...reward, actionStatus: 'available' }
@@ -276,27 +209,18 @@ async function loadRewardPage(retried = false) {
       ])
       appliedRecords.value = applied || []
       deliveredRecords.value = delivered || []
-      members.value = []
-      selectedRewardVirtualChildId.value = 0
       return
     }
 
     if (isParentRole.value) {
-      const [applied, memberList] = await Promise.all([
-        listRewardRecords({ familyId, status: 'APPLIED' }),
-        listMembers(familyId)
-      ])
+      const applied = await listRewardRecords({ familyId, status: 'APPLIED' })
       appliedRecords.value = applied || []
-      members.value = memberList || []
       deliveredRecords.value = []
-      syncSelectedRewardVirtualChild()
       return
     }
 
     appliedRecords.value = []
     deliveredRecords.value = []
-    members.value = []
-    selectedRewardVirtualChildId.value = 0
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
       throw error
@@ -459,38 +383,6 @@ async function offShelfExistingReward(reward) {
   await loadRewardPage()
 }
 
-function syncSelectedRewardVirtualChild() {
-  if (virtualChildren.value.some((child) => child.id === selectedRewardVirtualChildId.value)) {
-    return
-  }
-  selectedRewardVirtualChildId.value = virtualChildren.value[0]?.id || 0
-}
-
-function selectRewardVirtualChild(memberId) {
-  selectedRewardVirtualChildId.value = memberId
-}
-
-async function applyProxyReward(reward) {
-  const child = selectedRewardVirtualChild.value
-  if (!child) {
-    uni.showToast({ title: '请先选择孩子', icon: 'none' })
-    return
-  }
-
-  submittingProxyRewardId.value = reward.id
-  try {
-    const record = await applyReward({
-      familyId: currentFamily.value.familyId,
-      rewardId: reward.id,
-      memberId: child.id
-    })
-    addAppliedRewardRecord(record, reward, child)
-    uni.showToast({ title: '已为孩子申请兑换', icon: 'success' })
-  } finally {
-    submittingProxyRewardId.value = 0
-  }
-}
-
 function addAppliedRewardRecord(record, reward, child = null) {
   const nextRecord = {
     ...record,
@@ -529,16 +421,6 @@ function removeDeliveredRewardRecord(recordId) {
   deliveredRecords.value = deliveredRecords.value.filter((item) => item.id !== recordId)
 }
 
-function proxyRewardButtonText(reward) {
-  if (submittingProxyRewardId.value === reward.id) {
-    return '处理中'
-  }
-  if (reward.actionStatus === 'available') {
-    return '代兑换'
-  }
-  return rewardButtonText(reward)
-}
-
 function rewardButtonText(reward) {
   const map = {
     available: '兑换',
@@ -557,6 +439,10 @@ function stockText(stock) {
     return '已兑完'
   }
   return `剩余 ${stock} 份`
+}
+
+function goRewardProxy() {
+  uni.navigateTo({ url: '/pages/reward-proxy/index' })
 }
 
 function formatTime(value) {
@@ -634,10 +520,26 @@ function formatTime(value) {
   gap: 18px;
 }
 
+.section-heading,
+.proxy-entry {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
 .section-title {
   color: #1f2937;
   font-size: 16px;
   font-weight: 700;
+}
+
+.section-subtitle,
+.proxy-entry-subtitle {
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .reward-list,
@@ -734,6 +636,20 @@ function formatTime(value) {
 
 .state-block.compact {
   padding: 20px 16px;
+}
+
+.proxy-entry {
+  background: linear-gradient(135deg, #fff3d8 0%, #fff 58%);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.proxy-entry-title {
+  color: #111827;
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .create-panel {
@@ -842,68 +758,4 @@ function formatTime(value) {
   padding: 0 12px;
 }
 
-.proxy-panel {
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px;
-}
-
-.proxy-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.proxy-title,
-.proxy-subtitle {
-  display: block;
-}
-
-.proxy-title {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.proxy-subtitle {
-  color: #64748b;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.proxy-points {
-  color: #f59e0b;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.proxy-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.child-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.child-option-btn {
-  background: #f8fafc;
-  border: 1px solid #dbe3ef;
-  border-radius: 16px;
-  color: #475569;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.child-option-btn.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  color: #2563eb;
-}
 </style>
