@@ -1,80 +1,82 @@
 <template>
   <view class="sun-page family-select-page">
-    <view class="header">
-      <view class="header-copy">
+    <view class="page-head">
+      <view>
+        <text class="eyebrow">欢迎回来</text>
         <text class="title">选择家庭</text>
-        <text class="subtitle">进入一个家庭后，就可以查看任务、积分和奖励</text>
+        <text class="subtitle">进入家庭后查看任务、积分和奖励</text>
       </view>
-      <button class="create-top-btn" size="mini" @click="openCreateForm">创建</button>
+      <button class="btn primary" size="mini" @click="openCreateForm">创建</button>
     </view>
 
-    <view class="create-family-card">
-      <view class="create-copy">
-        <text class="create-card-title">创建一个新家庭</text>
-        <text class="create-card-desc">创建人默认昵称为家主，之后可以邀请家人加入。</text>
-      </view>
-      <view v-if="showCreateForm" class="create-form">
-        <view class="form-row">
-          <text class="form-label">家庭名称</text>
-          <input v-model.trim="familyForm.name" class="form-input create-input" placeholder="例如：温暖小家" />
+    <view class="card hero-card create-family-card">
+      <text class="card-heading">创建一个新家庭</text>
+      <text class="card-copy">创建人默认昵称为家主，之后可以邀请家人加入。</text>
+      <view v-if="showCreateForm" class="form-panel">
+        <view class="input-shell">
+          <input v-model.trim="familyForm.name" class="form-input hero-input" placeholder="家庭名称" placeholder-class="hero-placeholder" />
         </view>
-        <view class="form-actions">
-          <button class="plain-action-btn create-cancel-btn" size="mini" :disabled="submittingFamily" @click="cancelCreateFamily">取消</button>
-          <button class="primary-action-btn create-confirm-btn" size="mini" :disabled="submittingFamily" @click="submitCreateFamily">
+        <view class="create-actions">
+          <text class="create-preview">{{ familyForm.name || '温暖小家' }}</text>
+          <button class="btn light" size="mini" :disabled="submittingFamily" @click="submitCreateFamily">
             {{ submittingFamily ? '创建中' : '确认创建' }}
           </button>
         </view>
       </view>
-      <button v-else class="primary-action-btn create-expand-btn" size="mini" @click="openCreateForm">开始创建</button>
+      <button v-else class="btn light create-expand-btn" size="mini" @click="openCreateForm">开始创建</button>
     </view>
 
-    <view class="invite-entry">
-      <button class="text-action-btn" size="mini" @click="toggleInviteForm">
-        {{ showInviteForm ? '收起邀请码' : '已有邀请码？' }}
-      </button>
-    </view>
-
-    <view v-if="showInviteForm" class="entry-panel">
-      <view class="form-row">
-        <text class="form-label">邀请码</text>
-        <input v-model.trim="inviteForm.token" class="form-input" placeholder="输入家人发来的邀请码" />
+    <view class="card">
+      <view class="card-title">
+        <text>我的家庭</text>
+        <text class="card-count">{{ families.length }} 个</text>
       </view>
-      <view class="form-actions">
-        <button class="plain-action-btn" size="mini" :disabled="submittingInvite" @click="cancelAcceptInvite">取消</button>
-        <button class="primary-action-btn" size="mini" :disabled="submittingInvite" @click="submitAcceptInvite">
-          {{ submittingInvite ? '加入中' : '确认加入' }}
-        </button>
+
+      <view v-if="loading" class="state-row">
+        <text>正在加载家庭...</text>
       </view>
-    </view>
-
-    <view v-if="loading" class="state-block">
-      <text>正在加载家庭...</text>
-    </view>
-
-    <view v-else-if="families.length === 0" class="state-block empty-state">
-      <text class="empty-title">暂无家庭</text>
-      <text class="empty-desc">创建一个家庭，或通过家人发来的邀请加入家庭。</text>
-      <button class="empty-create-btn" size="mini" @click="openCreateForm">创建家庭</button>
-      <button class="retry-btn" size="mini" @click="loadFamilies">重新加载</button>
-    </view>
-
-    <view v-else class="family-list">
-      <view
-        class="family-card"
-        v-for="family in families"
-        :key="family.familyId"
-        @click="selectFamily(family)"
-      >
-        <view class="card-left">
-          <view class="avatar-placeholder">{{ familyInitial(family) }}</view>
-          <view class="info">
-            <text class="family-name">{{ family.familyName }}</text>
-            <view class="role-badge" :class="family.roleType.toLowerCase()">
-              <text>{{ roleName(family.roleType) }}</text>
+      <view v-else-if="families.length === 0" class="state-row empty-state">
+        <text class="empty-title">暂无家庭</text>
+        <text class="empty-desc">创建一个家庭，或通过家人发来的邀请加入家庭。</text>
+        <button class="btn primary" size="mini" @click="openCreateForm">创建家庭</button>
+        <button class="btn light" size="mini" @click="loadFamilies">重新加载</button>
+      </view>
+      <view v-else class="family-list">
+        <view
+          class="family-card"
+          v-for="family in families"
+          :key="family.familyId"
+          @click="selectFamily(family)"
+        >
+          <view class="family-left">
+            <view class="avatar">{{ familyInitial(family) }}</view>
+            <view class="family-info">
+              <text class="row-title">{{ family.familyName }}</text>
+              <text class="row-meta">{{ roleName(family.roleType) }} · {{ family.memberCount || 1 }} 位成员</text>
             </view>
           </view>
+          <button class="btn blue" size="mini" @click.stop="selectFamily(family)">进入</button>
         </view>
-        <text class="enter-btn">进入</text>
+      </view>
+    </view>
+
+    <view class="card blue-card invite-card">
+      <view class="card-title">
+        <text>已有邀请码？</text>
+        <button class="btn light" size="mini" @click="toggleInviteForm">{{ showInviteForm ? '收起' : '展开' }}</button>
+      </view>
+      <text class="card-copy muted">邀请码作为低权重入口，不占据首屏主体。</text>
+
+      <view v-if="showInviteForm" class="form-panel invite-form">
+        <view class="input-shell normal-input">
+          <input v-model.trim="inviteForm.token" class="form-input" placeholder="输入家人发来的邀请码" />
+        </view>
+        <view class="form-actions">
+          <button class="btn light" size="mini" :disabled="submittingInvite" @click="cancelAcceptInvite">取消</button>
+          <button class="btn primary" size="mini" :disabled="submittingInvite" @click="submitAcceptInvite">
+            {{ submittingInvite ? '加入中' : '确认加入' }}
+          </button>
+        </view>
       </view>
     </view>
   </view>
@@ -135,23 +137,11 @@ function openCreateForm() {
   showInviteForm.value = false
 }
 
-function toggleCreateForm() {
-  showCreateForm.value = !showCreateForm.value
-  if (showCreateForm.value) {
-    showInviteForm.value = false
-  }
-}
-
 function toggleInviteForm() {
   showInviteForm.value = !showInviteForm.value
   if (showInviteForm.value) {
     showCreateForm.value = false
   }
-}
-
-function cancelCreateFamily() {
-  showCreateForm.value = false
-  familyForm.value = defaultFamilyForm()
 }
 
 function cancelAcceptInvite() {
@@ -244,356 +234,274 @@ function roleName(roleType) {
 </script>
 
 <style>
-.container {
-  min-height: 100vh;
-  padding: 48px 20px 24px;
-  background: #f5f7fa;
+.family-select-page {
+  padding-left: 32rpx;
+  padding-right: 32rpx;
 }
 
-.header {
+.page-head {
   align-items: flex-start;
   display: flex;
-  gap: 16px;
+  gap: 20rpx;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 28rpx;
 }
 
-.header-copy {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
+.eyebrow,
+.title,
+.subtitle,
+.card-heading,
+.card-copy,
+.row-title,
+.row-meta {
+  display: block;
+}
+
+.eyebrow {
+  color: #7a6c55;
+  font-size: 22rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
 }
 
 .title {
-  color: #1f2937;
-  font-size: 26px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  color: var(--sun-ink);
+  font-size: 50rpx;
+  font-weight: 950;
+  line-height: 1.12;
 }
 
 .subtitle {
-  color: #64748b;
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--sun-muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 12rpx;
 }
 
-.create-top-btn,
-.empty-create-btn,
-.primary-action-btn {
-  background: #2563eb;
-  border: none;
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.3);
+  border-radius: 36rpx;
+  box-shadow: 0 24rpx 56rpx rgba(43, 42, 40, 0.08);
+  margin-bottom: 24rpx;
+  padding: 26rpx;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 68%);
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
 }
 
-.create-top-btn {
-  border-radius: 16px;
-  flex-shrink: 0;
-  font-size: 12px;
-  line-height: 32px;
-  margin: 2px 0 0;
-  padding: 0 14px;
+.blue-card {
+  background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
+  border-color: rgba(75, 159, 255, 0.24);
 }
 
-.invite-entry {
+.card-title {
+  align-items: center;
+  color: var(--sun-ink);
   display: flex;
-  justify-content: flex-end;
-  margin: -4px 0 14px;
+  font-size: 28rpx;
+  font-weight: 950;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
 }
 
-.text-action-btn {
-  background: transparent;
-  border: none;
-  color: #2563eb;
-  font-size: 13px;
-  line-height: 28px;
-  margin: 0;
-  padding: 0;
+.card-count,
+.muted {
+  color: var(--sun-muted);
 }
 
-.entry-panel {
-  background: #fff;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 16px;
-  padding: 16px;
+.card-heading {
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 950;
 }
 
-.form-row {
+.card-copy {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 12rpx;
+}
+
+.form-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 18rpx;
+  margin-top: 24rpx;
 }
 
-.form-label {
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
+.input-shell {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1rpx solid rgba(255, 255, 255, 0.42);
+  border-radius: 24rpx;
+  display: flex;
+  min-height: 78rpx;
+  padding: 0 22rpx;
+}
+
+.normal-input {
+  background: #f6f8fb;
+  border-color: transparent;
 }
 
 .form-input {
-  background: #f8fafc;
-  border-radius: 8px;
-  color: #111827;
-  font-size: 14px;
-  height: 40px;
-  padding: 0 12px;
+  color: var(--sun-ink);
+  flex: 1;
+  font-size: 26rpx;
+  min-height: 72rpx;
 }
 
+.hero-input {
+  color: #fff;
+  font-weight: 800;
+}
+
+.hero-placeholder {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.create-actions,
 .form-actions {
+  align-items: center;
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  gap: 18rpx;
+  justify-content: space-between;
 }
 
-.plain-action-btn,
-.primary-action-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.plain-action-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+.create-preview {
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 800;
 }
 
 .family-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16rpx;
 }
 
 .family-card {
   align-items: center;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 30rpx;
   display: flex;
+  gap: 20rpx;
   justify-content: space-between;
-  padding: 18px;
+  min-height: 132rpx;
+  padding: 22rpx;
 }
 
-.card-left {
+.family-left {
   align-items: center;
   display: flex;
-  gap: 12px;
+  flex: 1;
+  gap: 22rpx;
+  min-width: 0;
 }
 
-.avatar-placeholder {
+.avatar {
   align-items: center;
-  background: #dbeafe;
+  background: linear-gradient(135deg, #ffcc69 0%, #ff8f5d 100%);
   border-radius: 50%;
-  color: #2563eb;
+  color: #fff;
   display: flex;
-  font-size: 18px;
-  font-weight: 700;
-  height: 48px;
+  flex-shrink: 0;
+  font-size: 34rpx;
+  font-weight: 950;
+  height: 84rpx;
   justify-content: center;
-  width: 48px;
+  width: 84rpx;
 }
 
-.info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.family-info {
+  min-width: 0;
 }
 
-.family-name {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 600;
+.row-title {
+  color: var(--sun-ink);
+  font-size: 28rpx;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.role-badge {
-  border-radius: 4px;
-  display: flex;
-  font-size: 12px;
-  padding: 2px 8px;
-  width: fit-content;
+.row-meta {
+  color: var(--sun-muted);
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 8rpx;
 }
 
-.role-badge.owner {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.role-badge.admin,
-.role-badge.parent {
-  background: #dcfce7;
-  color: #047857;
-}
-
-.role-badge.child {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.enter-btn {
-  color: #94a3b8;
-  font-size: 14px;
-}
-
-.state-block {
+.state-row {
   align-items: center;
-  background: #fff;
-  border-radius: 12px;
-  color: #64748b;
+  color: var(--sun-muted);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 36px 20px;
+  font-size: 26rpx;
+  gap: 16rpx;
+  padding: 34rpx 20rpx;
   text-align: center;
 }
 
-.empty-state {
-  margin-top: 4px;
-}
-
 .empty-title {
-  color: #1f2937;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.empty-desc {
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.empty-create-btn,
-.retry-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 32px;
-  margin-top: 8px;
-  padding: 0 18px;
-}
-
-.retry-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  margin-top: 0;
-}
-
-.family-select-page .header {
-  margin-bottom: 24rpx;
-}
-
-.family-select-page .title {
   color: var(--sun-ink);
-  font-size: 46rpx;
-  font-weight: 800;
-}
-
-.family-select-page .subtitle {
-  color: var(--sun-muted);
-  font-size: 24rpx;
-  line-height: 1.55;
-}
-
-.family-select-page .entry-panel,
-.family-select-page .family-card,
-.family-select-page .state-block {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid rgba(255, 184, 77, 0.28);
-  border-radius: 28rpx;
-  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
-}
-
-.family-select-page .create-family-card {
-  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 68%);
-  border-radius: 30rpx;
-  box-shadow: 0 18rpx 38rpx rgba(255, 122, 69, 0.24);
-  color: #fff;
-  margin-bottom: 24rpx;
-  padding: 28rpx;
-}
-
-.family-select-page .create-copy,
-.family-select-page .create-card-title,
-.family-select-page .create-card-desc {
-  display: block;
-}
-
-.family-select-page .create-card-title {
   font-size: 30rpx;
   font-weight: 900;
 }
 
-.family-select-page .create-card-desc {
+.empty-desc {
+  color: var(--sun-muted);
   font-size: 24rpx;
   line-height: 1.5;
-  margin-top: 12rpx;
-  opacity: 0.92;
 }
 
-.family-select-page .create-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-  margin-top: 22rpx;
-}
-
-.family-select-page .create-input {
-  background: rgba(255, 255, 255, 0.24);
-  border: 1rpx solid rgba(255, 255, 255, 0.42);
-  color: #fff;
-}
-
-.family-select-page .create-cancel-btn,
-.family-select-page .create-confirm-btn,
-.family-select-page .create-expand-btn {
-  background: #eef7ff;
-  color: var(--sun-sky);
-  box-shadow: none;
-}
-
-.family-select-page .create-top-btn,
-.family-select-page .empty-create-btn,
-.family-select-page .primary-action-btn {
-  background: var(--sun-action);
+.btn {
+  align-items: center;
   border-radius: 999rpx;
-}
-
-.family-select-page .plain-action-btn,
-.family-select-page .retry-btn {
-  background: #eef7ff;
-  border-color: rgba(75, 159, 255, 0.22);
-  border-radius: 999rpx;
-  color: var(--sun-sky);
-}
-
-.family-select-page .avatar-placeholder {
-  background: linear-gradient(135deg, #ffcf6c 0%, #ff8f5d 100%);
-  color: #fff;
-}
-
-.family-select-page .enter-btn,
-.family-select-page .text-action-btn {
-  color: var(--sun-sky);
+  display: inline-flex;
+  font-size: 24rpx;
+  font-weight: 900;
+  justify-content: center;
+  line-height: 60rpx;
+  min-height: 60rpx;
+  min-width: 104rpx;
+  padding: 0 24rpx;
 }
 
 .family-select-page button {
-  min-height: 64rpx;
+  min-height: 60rpx;
   border-radius: 999rpx;
   font-size: 24rpx;
-  font-weight: 800;
-  line-height: 64rpx;
-  padding: 0 26rpx;
+  font-weight: 900;
+  line-height: 60rpx;
+  padding: 0 24rpx;
 }
 
-.family-select-page .create-family-card .create-cancel-btn,
-.family-select-page .create-family-card .create-confirm-btn,
-.family-select-page .create-family-card .create-expand-btn {
+.btn.primary {
+  background: var(--sun-action);
+  color: #fff;
+}
+
+.btn.blue {
+  background: var(--sun-sky);
+  color: #fff;
+}
+
+.btn.light {
   background: #eef7ff;
-  color: var(--sun-sky);
+  border: 1rpx solid rgba(75, 159, 255, 0.18);
   box-shadow: none;
+  color: #2f80ed;
+}
+
+.create-expand-btn {
+  margin-top: 24rpx;
 }
 </style>
