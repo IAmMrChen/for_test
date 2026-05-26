@@ -1,111 +1,91 @@
 <template>
   <view class="sun-page rewards-page">
-    <view class="header">
+    <view class="page-head">
       <view>
+        <text class="eyebrow">奖励商店</text>
         <text class="title">奖励</text>
-        <text class="subtitle">{{ familyName }}</text>
-      </view>
-      <view class="summary-pill">
-        <text class="summary-label">{{ isChild ? '当前积分' : '待发放' }}</text>
-        <text class="summary-value">{{ isChild ? currentPoints : appliedRecords.length }}</text>
+        <text class="subtitle">兑换、发放和维护奖励库</text>
       </view>
     </view>
 
-    <view v-if="loading" class="state-block">
+    <view v-if="loading" class="card state-card">
       <text>正在加载奖励...</text>
     </view>
 
-    <view v-else class="content">
-      <view v-if="isChild && deliveredRecords.length > 0" class="section">
-        <view class="section-title">待确认收到</view>
-        <view class="record-card" v-for="record in deliveredRecords" :key="record.id">
-          <view class="record-main">
-            <text class="record-title">{{ record.rewardName }}</text>
-            <text class="record-meta">消耗 {{ record.pointsCost }} 积分</text>
+    <view v-else class="rewards-content">
+      <view v-if="isParentRole" class="card blue-card proxy-entry" @click="goRewardProxy">
+        <view class="card-title">
+          <text>代孩子兑换奖励</text>
+          <button class="btn blue" size="mini" @click.stop="goRewardProxy">进入</button>
+        </view>
+        <text class="card-copy">奖励较多时进入独立页处理，先选孩子，再选奖励。</text>
+      </view>
+
+      <view v-if="isChild" class="card hero-card points-card">
+        <text class="section-name">{{ familyName }}</text>
+        <text class="metric-main">{{ currentPoints }}</text>
+        <text class="metric-sub">当前积分，可用于兑换奖励。</text>
+      </view>
+
+      <view v-if="isChild && deliveredRecords.length > 0" class="card blue-card">
+        <view class="card-title">
+          <text>待确认收到</text>
+          <text>{{ deliveredRecords.length }} 项</text>
+        </view>
+        <view class="list">
+          <view class="row" v-for="record in deliveredRecords" :key="record.id">
+            <view class="row-main">
+              <text class="row-title">{{ record.rewardName }}</text>
+              <text class="row-meta">消耗 {{ record.pointsCost }} 积分</text>
+            </view>
+            <button class="btn green" size="mini" @click="receive(record)">确认</button>
           </view>
-          <button class="primary-btn" size="mini" @click="receive(record)">确认收到</button>
         </view>
       </view>
 
-      <view v-if="isParentRole" class="section">
-        <view class="section-title">待发放申请</view>
-        <view v-if="appliedRecords.length === 0" class="state-block compact">
+      <view v-if="isParentRole" class="card">
+        <view class="card-title">
+          <text>待发放申请</text>
+          <text>{{ appliedRecords.length }} 项</text>
+        </view>
+        <view v-if="appliedRecords.length === 0" class="empty-row">
           <text>当前没有待发放奖励</text>
         </view>
-        <view v-else class="record-card" v-for="record in appliedRecords" :key="record.id">
-          <view class="record-main">
-            <text class="record-title">{{ record.nickname || '孩子' }} 申请 {{ record.rewardName }}</text>
-            <text class="record-meta">{{ record.pointsCost }} 积分 · {{ formatTime(record.applyTime) }}</text>
-          </view>
-          <view class="record-actions">
-            <button class="plain-btn" size="mini" @click="reject(record)">驳回</button>
-            <button class="primary-btn" size="mini" @click="deliver(record)">发放</button>
+        <view v-else class="list">
+          <view class="row" v-for="record in appliedRecords" :key="record.id">
+            <view class="row-main">
+              <text class="row-title">{{ record.nickname || '孩子' }}申请{{ record.rewardName }}</text>
+              <text class="row-meta">{{ record.pointsCost }} 积分 · {{ formatTime(record.applyTime) }}</text>
+            </view>
+            <view class="row-actions">
+              <button class="btn primary" size="mini" @click="deliver(record)">发放</button>
+              <button class="btn danger" size="mini" @click="reject(record)">驳回</button>
+            </view>
           </view>
         </view>
       </view>
 
-      <view v-if="isParentRole" class="proxy-entry" @click="goRewardProxy">
-        <view>
-          <text class="proxy-entry-title">代孩子兑换奖励</text>
-          <text class="proxy-entry-subtitle">为孩子选择奖励并直接提交兑换申请</text>
-        </view>
-        <button class="small-primary-btn" size="mini" @click.stop="goRewardProxy">进入</button>
-      </view>
-
-      <view class="section">
-        <view class="section-heading">
+      <view class="card reward-library-card">
+        <view class="card-title">
           <view>
-            <text class="section-title">可兑换奖励</text>
-            <text v-if="isParentRole" class="section-subtitle">奖励库</text>
+            <text>奖励库</text>
+            <text v-if="!isParentRole" class="card-subtitle">可兑换奖励</text>
           </view>
-          <button v-if="isParentRole && !showRewardForm" class="small-primary-btn" size="mini" @click="openRewardForm">新建</button>
+          <button v-if="isParentRole && !showRewardForm" class="btn primary" size="mini" @click="openRewardForm">新建</button>
         </view>
 
-        <view v-if="isParentRole && showRewardForm" class="create-panel">
-          <view class="create-header">
-            <view>
-              <text class="create-title">{{ editingRewardId ? '编辑奖励' : '新建奖励' }}</text>
-              <text class="create-subtitle">创建孩子可以用积分兑换的奖励</text>
-            </view>
-          </view>
-
-          <view class="create-form">
-            <view class="form-row">
-              <text class="form-label">奖励名称</text>
-              <input v-model.trim="rewardForm.name" class="form-input" placeholder="例如：周末电影票" />
-            </view>
-            <view class="form-row">
-              <text class="form-label">所需积分</text>
-              <input v-model="rewardForm.pointsCost" class="form-input" type="number" placeholder="30" />
-            </view>
-            <view class="form-row">
-              <text class="form-label">库存</text>
-              <input v-model="rewardForm.stock" class="form-input" type="number" placeholder="0" />
-              <text class="form-hint">库存填 0 表示不限库存</text>
-            </view>
-            <view class="form-actions">
-              <button class="plain-action-btn" size="mini" :disabled="submittingReward" @click="cancelRewardForm">取消</button>
-              <button class="primary-action-btn" size="mini" :disabled="submittingReward" @click="createNewReward">
-                {{ submittingReward ? '保存中' : '确认保存' }}
-              </button>
-            </view>
-          </view>
-        </view>
-
-        <view v-if="rewards.length === 0" class="state-block compact">
+        <view v-if="rewards.length === 0" class="empty-row">
           <text>暂无可兑换奖励</text>
         </view>
-        <view v-else class="reward-list">
-          <view class="reward-card" v-for="reward in rewardRows" :key="reward.id">
-            <view class="reward-info">
-              <text class="reward-name">{{ reward.name }}</text>
-              <text class="reward-stock">{{ stockText(reward.stock) }}</text>
+        <view v-else class="list">
+          <view class="row reward-row" v-for="reward in rewardRows" :key="reward.id">
+            <view class="row-main">
+              <text class="row-title">{{ reward.name }}</text>
+              <text class="row-meta">{{ reward.pointsCost }} 积分 · {{ stockText(reward.stock) }}</text>
             </view>
-            <view class="reward-side">
-              <text class="points">{{ reward.pointsCost }} 积分</text>
+            <view v-if="isChild" class="row-actions">
               <button
-                v-if="isChild"
-                class="exchange-btn"
+                class="btn blue exchange-btn"
                 size="mini"
                 :class="reward.actionStatus"
                 :disabled="reward.actionStatus !== 'available'"
@@ -113,15 +93,49 @@
               >
                 {{ rewardButtonText(reward) }}
               </button>
-              <view v-if="isParentRole" class="manage-actions">
-                <button class="plain-action-btn" size="mini" @click="editReward(reward)">编辑</button>
-                <button class="danger-action-btn" size="mini" @click="offShelfExistingReward(reward)">下架</button>
-              </view>
+            </view>
+            <view v-if="isParentRole" class="row-actions">
+              <button class="btn light" size="mini" @click="editReward(reward)">编辑</button>
+              <button class="btn danger" size="mini" @click="offShelfExistingReward(reward)">下架</button>
             </view>
           </view>
         </view>
       </view>
 
+      <view v-if="isParentRole && showRewardForm" class="card hero-card create-panel">
+        <view class="card-title">
+          <text>{{ editingRewardId ? '编辑奖励' : '新建奖励表单' }}</text>
+        </view>
+        <view class="create-form">
+          <view class="form-row">
+            <text class="form-label">奖励名称</text>
+            <view class="input-shell">
+              <input v-model.trim="rewardForm.name" class="form-input" placeholder="例如：周末电影票" placeholder-class="hero-placeholder" />
+            </view>
+          </view>
+          <view class="form-row">
+            <text class="form-label">所需积分</text>
+            <view class="input-shell">
+              <input v-model="rewardForm.pointsCost" class="form-input" type="number" placeholder="30" placeholder-class="hero-placeholder" />
+            </view>
+          </view>
+          <view class="form-row">
+            <text class="form-label">库存</text>
+            <view class="input-shell">
+              <input v-model="rewardForm.stock" class="form-input" type="number" placeholder="0" placeholder-class="hero-placeholder" />
+            </view>
+          </view>
+          <view class="form-actions">
+            <text class="form-hint">库存填 0 表示不限库存</text>
+            <view class="form-buttons">
+              <button class="btn light" size="mini" :disabled="submittingReward" @click="cancelRewardForm">取消</button>
+              <button class="btn light" size="mini" :disabled="submittingReward" @click="createNewReward">
+                {{ submittingReward ? '保存中' : '确认保存' }}
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -821,6 +835,307 @@ function formatTime(value) {
   font-weight: 800;
   line-height: 64rpx;
   padding: 0 26rpx;
+}
+
+.rewards-page {
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+}
+
+.rewards-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.page-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 20rpx;
+  justify-content: space-between;
+  margin-bottom: 28rpx;
+}
+
+.eyebrow,
+.title,
+.subtitle,
+.card-copy,
+.card-subtitle,
+.section-name,
+.metric-main,
+.metric-sub,
+.form-label,
+.form-hint,
+.row-title,
+.row-meta {
+  display: block;
+}
+
+.eyebrow {
+  color: #7a6c55;
+  font-size: 22rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
+}
+
+.rewards-page .title {
+  color: #172033;
+  font-size: 50rpx;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.12;
+  margin-bottom: 0;
+}
+
+.rewards-page .subtitle {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin-top: 14rpx;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.3);
+  border-radius: 36rpx;
+  box-shadow: 0 24rpx 56rpx rgba(43, 42, 40, 0.08);
+  padding: 26rpx;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
+  color: #fff;
+}
+
+.blue-card {
+  background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
+  border-color: rgba(75, 159, 255, 0.24);
+}
+
+.card-title {
+  align-items: center;
+  color: #172033;
+  display: flex;
+  font-size: 28rpx;
+  font-weight: 950;
+  gap: 16rpx;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
+.hero-card .card-title,
+.hero-card .form-label,
+.hero-card .form-hint,
+.hero-card .section-name,
+.hero-card .metric-main,
+.hero-card .metric-sub {
+  color: #fff;
+}
+
+.card-copy,
+.card-subtitle {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.card-copy {
+  margin-top: -4rpx;
+}
+
+.section-name {
+  font-size: 24rpx;
+  font-weight: 900;
+  margin-bottom: 12rpx;
+}
+
+.metric-main {
+  font-size: 62rpx;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.metric-sub {
+  font-size: 24rpx;
+  line-height: 1.35;
+  margin-top: 14rpx;
+}
+
+.list,
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 28rpx;
+  display: flex;
+  gap: 16rpx;
+  justify-content: space-between;
+  min-height: 108rpx;
+  padding: 20rpx 22rpx;
+}
+
+.row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.row-title {
+  color: #172033;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  color: #7b8190;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 8rpx;
+}
+
+.row-actions {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10rpx;
+}
+
+.empty-row,
+.state-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 28rpx;
+  color: #7b8190;
+  display: flex;
+  flex-direction: column;
+  font-size: 26rpx;
+  justify-content: center;
+  min-height: 104rpx;
+  text-align: center;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.form-label {
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.input-shell {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.36);
+  border-radius: 24rpx;
+  display: flex;
+  min-height: 78rpx;
+  padding: 0 24rpx;
+}
+
+.form-input {
+  background: transparent;
+  color: #fff;
+  flex: 1;
+  font-size: 24rpx;
+  min-height: 76rpx;
+  padding: 0;
+}
+
+.hero-placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.form-actions {
+  align-items: center;
+  display: flex;
+  gap: 16rpx;
+  justify-content: space-between;
+}
+
+.form-hint {
+  color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+  font-size: 22rpx;
+  line-height: 1.4;
+  margin-top: 0;
+}
+
+.form-buttons {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12rpx;
+}
+
+.rewards-page button,
+.rewards-page .btn {
+  align-items: center;
+  border: 0;
+  border-radius: 999rpx;
+  box-shadow: 0 16rpx 32rpx rgba(255, 122, 69, 0.2);
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 24rpx;
+  font-weight: 900;
+  height: 60rpx;
+  justify-content: center;
+  line-height: 60rpx;
+  margin: 0;
+  min-height: 60rpx;
+  min-width: 112rpx;
+  padding: 0 24rpx;
+  white-space: nowrap;
+}
+
+.rewards-page .btn.primary {
+  background: var(--sun-action);
+}
+
+.rewards-page .btn.blue {
+  background: var(--sun-sky);
+  box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
+}
+
+.rewards-page .btn.green {
+  background: var(--sun-mint);
+  box-shadow: 0 16rpx 32rpx rgba(99, 199, 132, 0.18);
+}
+
+.rewards-page .btn.light {
+  background: #eef7ff;
+  border: 1rpx solid rgba(75, 159, 255, 0.18);
+  box-shadow: none;
+  color: #2f80ed;
+}
+
+.rewards-page .btn.danger {
+  background: #fff1f3;
+  border: 1rpx solid rgba(239, 107, 122, 0.2);
+  box-shadow: none;
+  color: #d95061;
+}
+
+.rewards-page .exchange-btn.insufficient,
+.rewards-page .exchange-btn.soldout,
+.rewards-page .exchange-btn.applied {
+  background: #eef2f7;
+  box-shadow: none;
+  color: #8a95a5;
 }
 
 </style>
