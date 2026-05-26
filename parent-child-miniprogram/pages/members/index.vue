@@ -1,26 +1,27 @@
 <template>
   <view class="sun-page members-page">
-    <view class="page-header">
+    <view class="page-head">
       <view>
-        <text class="sun-title">成员管理</text>
-        <text class="sun-subtitle">{{ familyName }}</text>
+        <text class="eyebrow">成员与邀请</text>
+        <text class="title">成员管理</text>
+        <text class="subtitle">{{ familyName }}</text>
       </view>
-      <button class="sun-btn secondary header-btn" size="mini" @click="goBack">返回</button>
+      <button class="btn light header-btn" size="mini" @click="goBack">返回</button>
     </view>
 
-    <view v-if="loading" class="sun-card state-card">
+    <view v-if="loading" class="card state-card">
       <text>正在加载成员...</text>
     </view>
 
     <view v-else class="content">
       <view v-if="isParentRole" class="action-grid">
-        <view class="sun-card action-card">
+        <view class="card action-card">
           <view class="action-header">
             <view>
               <text class="action-title">创建虚拟孩子</text>
               <text class="action-subtitle">为暂时没有微信账号的孩子建立积分身份</text>
             </view>
-            <button v-if="!showVirtualChildForm" class="sun-btn action-mini" size="mini" @click="openVirtualChildForm">创建</button>
+            <button v-if="!showVirtualChildForm" class="btn primary action-mini" size="mini" @click="openVirtualChildForm">创建</button>
           </view>
 
           <view v-if="showVirtualChildForm" class="form-panel">
@@ -29,21 +30,21 @@
               <input v-model.trim="virtualChildForm.nickname" class="form-input" placeholder="例如：小宝" />
             </view>
             <view class="form-actions">
-              <button class="sun-btn secondary action-mini" size="mini" :disabled="submittingVirtualChild" @click="cancelVirtualChildForm">取消</button>
-              <button class="sun-btn action-mini" size="mini" :disabled="submittingVirtualChild" @click="submitVirtualChild">
+              <button class="btn light action-mini" size="mini" :disabled="submittingVirtualChild" @click="cancelVirtualChildForm">取消</button>
+              <button class="btn primary action-mini" size="mini" :disabled="submittingVirtualChild" @click="submitVirtualChild">
                 {{ submittingVirtualChild ? '创建中' : '确认创建' }}
               </button>
             </view>
           </view>
         </view>
 
-        <view class="sun-card action-card">
+        <view class="card action-card blue-card">
           <view class="action-header">
             <view>
               <text class="action-title">邀请成员</text>
               <text class="action-subtitle">生成带角色的邀请，加入后自动拥有对应身份</text>
             </view>
-            <button v-if="!showInviteCreateForm" class="sun-btn action-mini" size="mini" @click="openInviteCreateForm">邀请</button>
+            <button v-if="!showInviteCreateForm" class="btn blue action-mini" size="mini" @click="openInviteCreateForm">邀请</button>
           </view>
 
           <view v-if="showInviteCreateForm" class="form-panel">
@@ -53,7 +54,7 @@
                 <button
                   v-for="role in inviteRoleOptions"
                   :key="role.value"
-                  class="sun-chip"
+                  class="chip"
                   :class="{ active: inviteCreateForm.targetRole === role.value }"
                   size="mini"
                   @click="inviteCreateForm.targetRole = role.value"
@@ -63,8 +64,8 @@
               </view>
             </view>
             <view class="form-actions">
-              <button class="sun-btn secondary action-mini" size="mini" :disabled="submittingInviteCreate" @click="cancelInviteCreateForm">取消</button>
-              <button class="sun-btn action-mini" size="mini" :disabled="submittingInviteCreate" @click="submitCreateInvite">
+              <button class="btn light action-mini" size="mini" :disabled="submittingInviteCreate" @click="cancelInviteCreateForm">取消</button>
+              <button class="btn primary action-mini" size="mini" :disabled="submittingInviteCreate" @click="submitCreateInvite">
                 {{ submittingInviteCreate ? '生成中' : '生成邀请' }}
               </button>
             </view>
@@ -74,13 +75,13 @@
             <text class="invite-label">邀请码</text>
             <text class="invite-token">{{ latestInvite.token }}</text>
             <text class="invite-expire">有效期至 {{ formatTime(latestInvite.expiresAt) }}</text>
-            <button class="sun-btn secondary copy-btn" size="mini" @click="copyInviteToken">复制邀请码</button>
+            <button class="btn light copy-btn" size="mini" @click="copyInviteToken">复制邀请码</button>
           </view>
         </view>
       </view>
 
-      <view class="sun-card">
-        <view class="sun-card-title">
+      <view class="card">
+        <view class="card-title">
           <text>家庭成员</text>
           <text class="member-count">{{ members.length }} 人</text>
         </view>
@@ -102,7 +103,7 @@
               <text class="member-score-label">当前积分</text>
               <button
                 v-if="isParentRole && member.isVirtual"
-                class="sun-btn secondary bind-btn"
+                class="btn light bind-btn"
                 size="mini"
                 @click="createBindInvite(member)"
               >
@@ -116,7 +117,7 @@
           <text class="invite-label">虚拟孩子绑定码</text>
           <text class="invite-token">{{ latestBindInvite.token }}</text>
           <text class="invite-expire">有效期至 {{ formatTime(latestBindInvite.expiresAt) }}</text>
-          <button class="sun-btn secondary copy-btn" size="mini" @click="copyBindInviteToken">复制绑定码</button>
+          <button class="btn light copy-btn" size="mini" @click="copyBindInviteToken">复制绑定码</button>
         </view>
       </view>
     </view>
@@ -530,5 +531,153 @@ function formatTime(value) {
 .state-card,
 .empty-text {
   text-align: center;
+}
+
+.members-page {
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+}
+
+.page-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 20rpx;
+  justify-content: space-between;
+  margin-bottom: 28rpx;
+}
+
+.eyebrow,
+.title,
+.subtitle,
+.card-title {
+  display: block;
+}
+
+.eyebrow {
+  color: #7a6c55;
+  font-size: 22rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
+}
+
+.title {
+  color: #172033;
+  font-size: 50rpx;
+  font-weight: 950;
+  line-height: 1.12;
+}
+
+.subtitle {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin-top: 14rpx;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.3);
+  border-radius: 36rpx;
+  box-shadow: 0 24rpx 56rpx rgba(43, 42, 40, 0.08);
+  padding: 26rpx;
+}
+
+.blue-card {
+  background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
+  border-color: rgba(75, 159, 255, 0.24);
+}
+
+.card-title {
+  align-items: center;
+  color: #172033;
+  display: flex;
+  font-size: 28rpx;
+  font-weight: 950;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
+.action-title,
+.member-name {
+  color: #172033;
+  font-size: 28rpx;
+  font-weight: 950;
+}
+
+.action-subtitle,
+.member-score-label,
+.invite-label,
+.invite-expire,
+.empty-text,
+.member-count {
+  color: #707887;
+}
+
+.member-card {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: var(--sun-line);
+  border-radius: 28rpx;
+}
+
+.form-input {
+  background: #f6f8fb;
+  border-radius: 24rpx;
+}
+
+.invite-result {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 28rpx;
+}
+
+.members-page button,
+.members-page .btn,
+.members-page .chip {
+  align-items: center;
+  border: 0;
+  border-radius: 999rpx;
+  box-shadow: 0 16rpx 32rpx rgba(255, 122, 69, 0.2);
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 24rpx;
+  font-weight: 900;
+  height: 60rpx;
+  justify-content: center;
+  line-height: 60rpx;
+  margin: 0;
+  min-height: 60rpx;
+  min-width: 112rpx;
+  padding: 0 24rpx;
+}
+
+.members-page .btn.primary {
+  background: var(--sun-action);
+}
+
+.members-page .btn.blue {
+  background: var(--sun-sky);
+  box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
+}
+
+.members-page .btn.light,
+.members-page .chip {
+  background: #eef7ff;
+  border: 1rpx solid rgba(75, 159, 255, 0.18);
+  box-shadow: none;
+  color: #2f80ed;
+}
+
+.members-page .chip {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--sun-line);
+  color: #697180;
+}
+
+.members-page .chip.active {
+  background: var(--sun-sky);
+  border-color: var(--sun-sky);
+  box-shadow: 0 16rpx 36rpx rgba(75, 159, 255, 0.2);
+  color: #fff;
 }
 </style>
