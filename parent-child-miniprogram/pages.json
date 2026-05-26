@@ -60,14 +60,14 @@
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "亲子积分",
-    "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F8F8F8"
+    "navigationBarBackgroundColor": "#fffaf0",
+    "backgroundColor": "#fffaf0"
   },
   "tabBar": {
     "color": "#94a3b8",
-    "selectedColor": "#3b82f6",
-    "borderStyle": "black",
-    "backgroundColor": "#ffffff",
+    "selectedColor": "#ff7a45",
+    "borderStyle": "white",
+    "backgroundColor": "#fffaf0",
     "list": [
       {
         "pagePath": "pages/index/index",

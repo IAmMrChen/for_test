@@ -224,4 +224,13 @@ function roleName(role) {
   margin-top: 22rpx;
   text-align: center;
 }
+
+.profile-page button {
+  min-height: 64rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 64rpx;
+  padding: 0 26rpx;
+}
 </style>

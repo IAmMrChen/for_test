@@ -524,4 +524,13 @@ function roleName(roleType) {
 .family-select-page .text-action-btn {
   color: var(--sun-sky);
 }
+
+.family-select-page button {
+  min-height: 64rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 64rpx;
+  padding: 0 26rpx;
+}
 </style>

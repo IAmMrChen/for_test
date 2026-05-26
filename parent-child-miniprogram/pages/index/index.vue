@@ -1095,4 +1095,14 @@ function formatTime(value) {
   border-color: var(--sun-sky);
   color: #fff;
 }
+
+.home-page button {
+  min-height: 64rpx;
+  height: auto;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 64rpx;
+  padding: 0 26rpx;
+}
 </style>

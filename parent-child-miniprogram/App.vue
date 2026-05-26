@@ -14,6 +14,7 @@
 
 <style>
 	/* 每个页面公共 css */
+	page,
 	:root {
 		--sun-primary: #ffb84d;
 		--sun-action: #ff7a45;
@@ -25,6 +26,38 @@
 		--sun-line: #edf0f5;
 		--sun-paper: #ffffff;
 		--sun-warm: #fff8ea;
+	}
+
+	button {
+		box-sizing: border-box;
+		min-height: 72rpx;
+		margin: 0;
+		border: 0;
+		border-radius: 999rpx;
+		background: var(--sun-action);
+		color: #fff;
+		font-size: 26rpx;
+		font-weight: 800;
+		line-height: 72rpx;
+		padding: 0 28rpx;
+		transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease;
+		box-shadow: 0 10rpx 22rpx rgba(255, 122, 69, 0.2);
+	}
+
+	button::after {
+		border: 0;
+	}
+
+	button:active {
+		transform: scale(0.98);
+		opacity: 0.92;
+	}
+
+	button[disabled] {
+		background: #edf1f6;
+		color: #9aa3b2;
+		box-shadow: none;
+		opacity: 1;
 	}
 
 	.sun-page {
@@ -70,14 +103,15 @@
 	}
 
 	.sun-btn {
-		min-height: 60rpx;
+		min-height: 72rpx;
 		border-radius: 999rpx;
-		padding: 0 24rpx;
+		padding: 0 28rpx;
 		background: var(--sun-action);
 		color: #fff;
-		font-size: 24rpx;
-		font-weight: 700;
-		line-height: 60rpx;
+		font-size: 26rpx;
+		font-weight: 800;
+		line-height: 72rpx;
+		box-shadow: 0 10rpx 22rpx rgba(255, 122, 69, 0.2);
 	}
 
 	.sun-btn.secondary {
