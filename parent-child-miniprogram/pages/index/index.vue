@@ -1,156 +1,171 @@
 <template>
   <view class="sun-page home-page">
-    <view class="navbar">
-      <view class="current-family">
-        <text class="greeting">{{ greetingText }}</text>
-        <text class="family-name">{{ familyName }}</text>
-      </view>
-      <view v-if="isChild" class="points-card">
-        <text class="points-label">当前积分</text>
-        <view class="points-value">{{ summary.currentPoints || 0 }} <text class="unit">分</text></view>
-      </view>
-    </view>
-
-    <view v-if="loading" class="state-block">
+    <view v-if="loading" class="card state-card">
       <text>正在加载首页...</text>
     </view>
 
-    <view v-else-if="loadError" class="content-area">
-      <view class="state-block">
-        <text>{{ loadError }}</text>
-        <button class="plain-action-btn retry-btn" size="mini" @click="loadHome">重新加载</button>
-      </view>
+    <view v-else-if="loadError" class="card state-card">
+      <text>{{ loadError }}</text>
+      <button class="btn light retry-btn" size="mini" @click="loadHome">重新加载</button>
     </view>
 
-    <view v-else-if="isChild" class="content-area">
-      <view class="summary-row">
-        <view class="summary-item">
-          <text class="summary-num">{{ summary.myClaimedTaskCount || 0 }}</text>
-          <text class="summary-label">已领取</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-num">{{ summary.myPendingTaskCount || 0 }}</text>
-          <text class="summary-label">审核中</text>
+    <view v-else-if="isChild" class="home-content">
+      <view class="page-head">
+        <view>
+          <text class="eyebrow">{{ familyName }}</text>
+          <text class="title">{{ childHomeTitle }}</text>
+          <text class="subtitle">完成任务后可以兑换奖励</text>
         </view>
       </view>
 
-      <view v-if="childDeliveredRewardRecords.length > 0" class="section-block">
-        <view class="section-title">待确认奖励</view>
-        <view class="reward-todo-list">
-          <view class="reward-todo-item" v-for="record in childDeliveredRewardRecords" :key="record.id">
-            <view class="reward-todo-info">
-              <text class="reward-todo-title">{{ record.rewardName }}</text>
-              <text class="reward-todo-meta">消耗 {{ record.pointsCost }} 积分 · {{ formatTime(record.operateTime || record.applyTime) }}</text>
+      <view class="card hero-card current-points-card">
+        <text class="section-name">当前积分</text>
+        <text class="metric-main">{{ summary.currentPoints || 0 }}</text>
+        <text class="metric-sub">已领取 {{ summary.myClaimedTaskCount || 0 }} 项，审核中 {{ summary.myPendingTaskCount || 0 }} 项。</text>
+      </view>
+
+      <view class="card task-card">
+        <view class="card-title">
+          <text>可执行任务</text>
+          <button class="btn light" size="mini" @click="goTaskPage">任务页</button>
+        </view>
+        <view v-if="taskRows.length === 0" class="empty-row">
+          <text>暂无可执行任务</text>
+        </view>
+        <view v-else class="list">
+          <view class="row task-row" v-for="task in taskRows" :key="task.id">
+            <view class="row-main">
+              <text class="row-title">{{ task.title }}</text>
+              <text class="row-meta">+{{ task.points }} 积分 · {{ cycleText(task.cycleType) }} · {{ taskStatusText(task) }}</text>
             </view>
-            <button class="primary-action-btn" size="mini" @click="receiveDeliveredReward(record)">确认收到</button>
+            <view class="row-actions task-action-stack">
+              <button
+                class="btn blue action-btn"
+                :class="task.viewStatus"
+                :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
+                size="mini"
+                @click="handleTaskAction(task)"
+              >
+                {{ taskButtonText(task) }}
+              </button>
+              <button
+                v-if="task.activeClaim && task.cycleType !== 'ONCE'"
+                class="btn light stop-claim-btn"
+                size="mini"
+                @click="stopRecurringTaskClaim(task)"
+              >
+                停止领取
+              </button>
+            </view>
           </view>
         </view>
       </view>
 
-      <view class="section-title">可执行任务</view>
-      <view v-if="taskRows.length === 0" class="state-block">
-        <text>暂无可执行任务</text>
-      </view>
-      <view v-else class="task-list">
-        <view class="task-item" v-for="task in taskRows" :key="task.id">
-          <view class="task-info">
-            <view class="task-title">{{ task.title }}</view>
-            <view class="task-reward">+{{ task.points }} 积分</view>
-          </view>
-          <view class="task-action-stack">
-            <button
-              class="action-btn"
-              :class="task.viewStatus"
-              :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
-              @click="handleTaskAction(task)"
-            >
-              {{ taskButtonText(task) }}
-            </button>
-            <button
-              v-if="task.activeClaim && task.cycleType !== 'ONCE'"
-              class="plain-action-btn stop-claim-btn"
-              size="mini"
-              @click="stopRecurringTaskClaim(task)"
-            >
-              停止领取
-            </button>
+      <view class="card blue-card reward-confirm-card">
+        <view class="card-title">
+          <text>待确认奖励</text>
+          <text>{{ childDeliveredRewardRecords.length }} 项</text>
+        </view>
+        <view v-if="childDeliveredRewardRecords.length === 0" class="empty-row">
+          <text>当前没有待确认奖励</text>
+        </view>
+        <view v-else class="list">
+          <view class="row reward-row" v-for="record in childDeliveredRewardRecords" :key="record.id">
+            <view class="row-main">
+              <text class="row-title">{{ record.rewardName }}</text>
+              <text class="row-meta">已发放 · 消耗 {{ record.pointsCost }} 积分 · {{ formatTime(record.operateTime || record.applyTime) }}</text>
+            </view>
+            <button class="btn green" size="mini" @click="receiveDeliveredReward(record)">确认</button>
           </view>
         </view>
       </view>
     </view>
 
-    <view v-else class="content-area">
-      <view class="dashboard-stats">
-        <view class="stat-item" @click="scrollToSection('#audit-section')">
-          <view class="stat-num text-orange">{{ summary.familyPendingTaskCount || 0 }}</view>
-          <view class="stat-desc">待审核</view>
+    <view v-else class="home-content">
+      <view class="page-head">
+        <view>
+          <text class="eyebrow">{{ familyName }}</text>
+          <text class="title">今日看板</text>
+          <text class="subtitle">先处理孩子正在等你的事</text>
         </view>
-        <view class="stat-item" @click="scrollToSection('#reward-section')">
-          <view class="stat-num text-green">{{ summary.familyAppliedRewardCount || 0 }}</view>
-          <view class="stat-desc">待奖励</view>
+        <button class="btn light" size="mini" @click="switchFamily">切换</button>
+      </view>
+
+      <view class="stats">
+        <view class="stat" @click="scrollToSection('#audit-section')">
+          <text class="stat-num orange-text">{{ summary.familyPendingTaskCount || 0 }}</text>
+          <text class="stat-label">待审核</text>
         </view>
-        <view class="stat-item" @click="goTaskPage">
-          <view class="stat-num text-blue">{{ summary.activeTaskCount || 0 }}</view>
-          <view class="stat-desc">可用任务</view>
+        <view class="stat" @click="scrollToSection('#reward-section')">
+          <text class="stat-num green-text">{{ summary.familyAppliedRewardCount || 0 }}</text>
+          <text class="stat-label">待奖励</text>
+        </view>
+        <view class="stat" @click="goTaskPage">
+          <text class="stat-num blue-text">{{ summary.activeTaskCount || 0 }}</text>
+          <text class="stat-label">可用任务</text>
         </view>
       </view>
 
-      <view id="audit-section" class="section-title">待审核任务</view>
-      <view v-if="parentPendingRecords.length === 0" class="state-block">
-        <text>当前没有待审核任务</text>
-      </view>
-      <view v-else class="audit-list">
-        <view class="audit-item" v-for="record in parentPendingRecords" :key="record.id">
-          <view class="audit-header">
-            <text class="child-name">{{ record.nickname || '孩子' }}</text>
-            <text class="time">{{ formatTime(record.submitTime) }}</text>
-          </view>
-          <view class="audit-content">
-            <text>提交了任务：</text>
-            <text class="strong">{{ record.taskTitle }}</text>
-          </view>
-          <view v-if="record.submitRemark" class="audit-remark">{{ record.submitRemark }}</view>
-          <view class="audit-actions">
-            <button class="btn-reject" size="mini" plain @click="audit(record, false)">驳回</button>
-            <button class="btn-approve" size="mini" type="primary" @click="audit(record, true)">通过</button>
-          </view>
+      <view id="audit-section" class="card audit-card">
+        <view class="card-title">
+          <text>待审核任务</text>
+          <text>{{ parentPendingRecords.length }} 项</text>
         </view>
-      </view>
-
-      <view id="reward-section" class="section-title reward-section-title">待发放奖励</view>
-      <view v-if="parentAppliedRewardRecords.length === 0" class="state-block">
-        <text>当前没有待发放奖励</text>
-      </view>
-      <view v-else class="reward-todo-list">
-        <view class="reward-todo-item" v-for="record in parentAppliedRewardRecords" :key="record.id">
-          <view class="reward-todo-info">
-            <text class="reward-todo-title">{{ record.nickname || '孩子' }} 申请 {{ record.rewardName }}</text>
-            <text class="reward-todo-meta">{{ record.pointsCost }} 积分 · {{ formatTime(record.applyTime) }}</text>
-          </view>
-          <view class="audit-actions">
-            <button class="btn-reject" size="mini" plain @click="operateReward(record, false)">拒绝</button>
-            <button class="btn-approve" size="mini" type="primary" @click="operateReward(record, true)">发放</button>
+        <view v-if="parentPendingRecords.length === 0" class="empty-row">
+          <text>当前没有待审核任务</text>
+        </view>
+        <view v-else class="list">
+          <view class="row audit-row" v-for="record in parentPendingRecords" :key="record.id">
+            <view class="row-main">
+              <text class="row-title">{{ record.nickname || '孩子' }}提交{{ record.taskTitle }}</text>
+              <text class="row-meta">+{{ record.points || 0 }} 积分 · 今天 {{ formatTime(record.submitTime) }}</text>
+              <text v-if="record.submitRemark" class="row-remark">{{ record.submitRemark }}</text>
+            </view>
+            <view class="row-actions">
+              <button class="btn green" size="mini" @click="audit(record, true)">通过</button>
+              <button class="btn danger small" size="mini" @click="audit(record, false)">驳回</button>
+            </view>
           </view>
         </view>
       </view>
 
-      <view v-if="isParentRole" class="proxy-panel">
-        <view class="proxy-header">
-          <view>
-            <text class="proxy-title">代孩子完成任务</text>
-            <text class="proxy-subtitle">支持真实孩子和虚拟孩子</text>
+      <view id="reward-section" class="card blue-card reward-card">
+        <view class="card-title">
+          <text>待发放奖励</text>
+          <text>{{ parentAppliedRewardRecords.length }} 项</text>
+        </view>
+        <view v-if="parentAppliedRewardRecords.length === 0" class="empty-row">
+          <text>当前没有待发放奖励</text>
+        </view>
+        <view v-else class="list">
+          <view class="row reward-row" v-for="record in parentAppliedRewardRecords" :key="record.id">
+            <view class="row-main">
+              <text class="row-title">{{ record.nickname || '孩子' }}申请{{ record.rewardName }}</text>
+              <text class="row-meta">{{ record.pointsCost }} 积分 · 等待发放 · {{ formatTime(record.applyTime) }}</text>
+            </view>
+            <view class="row-actions">
+              <button class="btn primary" size="mini" @click="operateReward(record, true)">发放</button>
+              <button class="btn danger small" size="mini" @click="operateReward(record, false)">拒绝</button>
+            </view>
           </view>
         </view>
+      </view>
 
-        <view v-if="children.length === 0" class="state-block compact">
+      <view v-if="isParentRole" class="card green-card proxy-panel">
+        <view class="card-title">
+          <text>代孩子完成任务</text>
+        </view>
+        <text class="card-copy">支持真实孩子和虚拟孩子</text>
+
+        <view v-if="children.length === 0" class="empty-row">
           <text>暂无孩子，请先在我的页面创建或邀请孩子</text>
         </view>
         <view v-else class="proxy-content">
-          <view class="child-options">
+          <view class="chips child-options">
             <button
               v-for="child in children"
               :key="child.id"
-              class="child-option-btn"
+              class="chip child-option-btn"
               :class="{ active: selectedChildId === child.id }"
               size="mini"
               @click="selectChild(child.id)"
@@ -159,19 +174,20 @@
             </button>
           </view>
 
-          <view v-if="proxyVisibleTaskRows.length === 0" class="state-block compact">
+          <view v-if="proxyVisibleTaskRows.length === 0" class="empty-row">
             <text>当前孩子暂无可处理任务</text>
           </view>
-          <view v-else class="proxy-task-list">
-            <view class="task-item" v-for="task in proxyVisibleTaskRows" :key="task.id">
-              <view class="task-info">
-                <view class="task-title">{{ task.title }}</view>
-                <view class="task-reward">+{{ task.points }} 积分 · {{ taskStatusText(task) }}</view>
+          <view v-else class="list proxy-task-list">
+            <view class="row task-row" v-for="task in proxyVisibleTaskRows" :key="task.id">
+              <view class="row-main">
+                <text class="row-title">{{ task.title }}</text>
+                <text class="row-meta">+{{ task.points }} 积分 · {{ taskStatusText(task) }}</text>
               </view>
               <button
-                class="action-btn"
+                class="btn green action-btn"
                 :class="task.viewStatus"
                 :disabled="task.viewStatus === 'completed' || submittingProxyTaskId === task.id"
+                size="mini"
                 @click="handleProxyTaskAction(task)"
               >
                 {{ proxyTaskButtonText(task) }}
@@ -220,6 +236,10 @@ const familyName = computed(() => summary.value.familyName || currentFamily.valu
 const greetingText = computed(() => {
   const nickname = summary.value.nickname || currentFamily.value?.nickname || roleName(roleType.value)
   return `Hi，${nickname}`
+})
+const childHomeTitle = computed(() => {
+  const nickname = summary.value.nickname || currentFamily.value?.nickname || '小朋友'
+  return `${nickname}，今天也很棒`
 })
 
 const taskRows = computed(() => {
@@ -661,6 +681,10 @@ function goTaskPage() {
   uni.switchTab({ url: '/pages/tasks/index' })
 }
 
+function switchFamily() {
+  uni.reLaunch({ url: '/pages/family-select/index' })
+}
+
 function roleName(role) {
   const map = {
     OWNER: '家主',
@@ -669,6 +693,16 @@ function roleName(role) {
     CHILD: '孩子'
   }
   return map[role] || '用户'
+}
+
+function cycleText(cycleType) {
+  const map = {
+    ONCE: '一次',
+    DAILY: '每日',
+    WEEKLY: '每周',
+    MONTHLY: '每月'
+  }
+  return map[cycleType] || '任务'
 }
 
 function formatTime(value) {
@@ -683,426 +717,345 @@ function formatTime(value) {
 </script>
 
 <style>
-.container {
-  background-color: #f5f7fa;
-  min-height: 100vh;
+.home-page {
+  padding-left: 40rpx;
+  padding-right: 40rpx;
 }
 
-.navbar {
-  align-items: flex-end;
-  background: #fff;
+.home-content {
   display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.page-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 20rpx;
   justify-content: space-between;
-  padding: 44px 20px 20px;
+  margin-bottom: 2rpx;
 }
 
-.current-family {
-  display: flex;
-  flex-direction: column;
-}
-
-.greeting {
-  color: #1f2937;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.family-name {
-  color: #94a3b8;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.points-card {
-  display: flex;
-  flex-direction: column;
-  text-align: right;
-}
-
-.points-label {
-  color: #999;
-  font-size: 10px;
-}
-
-.points-value {
-  color: #f59e0b;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.unit {
-  font-size: 12px;
-}
-
-.content-area {
-  padding: 20px;
-}
-
-.section-title {
-  color: #1f2937;
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-.section-block {
-  margin-bottom: 24px;
-}
-
-.reward-section-title {
-  margin-top: 24px;
-}
-
-.summary-row,
-.dashboard-stats {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.summary-item,
-.stat-item {
-  background: #fff;
-  border-radius: 10px;
-  flex: 1;
-  padding: 16px;
-  text-align: center;
-}
-
-.summary-num,
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.summary-num {
-  color: #2563eb;
-}
-
-.summary-label,
-.stat-desc {
-  color: #64748b;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.text-orange {
-  color: #f97316;
-}
-
-.text-green {
-  color: #10b981;
-}
-
-.text-blue {
-  color: #2563eb;
-}
-
-.task-list,
-.audit-list,
-.reward-todo-list,
-.proxy-task-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.task-item,
-.audit-item,
-.reward-todo-item,
-.state-block,
-.proxy-panel {
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px;
-}
-
-.task-item,
-.reward-todo-item {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.task-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.task-action-stack {
-  align-items: flex-end;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  gap: 8px;
-  margin-left: 12px;
-}
-
-.task-title {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.task-reward {
-  color: #f59e0b;
-  font-size: 12px;
-}
-
-.reward-todo-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.reward-todo-title {
-  color: #111827;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.reward-todo-meta {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.action-btn {
-  background: #3b82f6;
-  border: none;
-  border-radius: 18px;
-  color: #fff;
-  font-size: 12px;
-  height: 32px;
-  line-height: 32px;
-  margin: 0;
-  padding: 0 16px;
-}
-
-.action-btn.claimed {
-  background: #10b981;
-}
-
-.action-btn.recurringActive {
-  background: #10b981;
-}
-
-.action-btn.pending,
-.action-btn.completed {
-  background: #e5e7eb;
-  color: #64748b;
-}
-
-.stop-claim-btn {
-  font-size: 11px;
-  line-height: 26px;
-  padding: 0 10px;
-}
-
-.audit-header {
-  color: #64748b;
-  display: flex;
-  font-size: 12px;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.child-name,
-.strong {
-  color: #1f2937;
-  font-weight: 700;
-}
-
-.audit-content {
-  color: #374151;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.audit-remark {
-  background: #f8fafc;
-  border-radius: 6px;
-  color: #64748b;
-  font-size: 12px;
-  margin-bottom: 12px;
-  padding: 8px;
-}
-
-.audit-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.btn-reject,
-.btn-approve {
-  margin: 0;
-}
-
-.state-block {
-  color: #64748b;
-  font-size: 14px;
-  text-align: center;
-}
-
-.state-block.compact {
-  padding: 20px 16px;
-}
-
-.retry-btn {
-  margin-top: 12px;
-}
-
-.proxy-panel {
-  margin-top: 24px;
-}
-
-.proxy-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.proxy-title,
-.proxy-subtitle {
+.eyebrow,
+.title,
+.subtitle,
+.card-copy,
+.section-name,
+.metric-main,
+.metric-sub,
+.row-title,
+.row-meta,
+.row-remark,
+.stat-num,
+.stat-label {
   display: block;
 }
 
-.proxy-title {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 700;
+.eyebrow {
+  color: #7a6c55;
+  font-size: 22rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
 }
 
-.proxy-subtitle {
-  color: #64748b;
-  font-size: 12px;
-  margin-top: 4px;
+.title {
+  color: #172033;
+  font-size: 50rpx;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.12;
 }
 
+.subtitle {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin-top: 14rpx;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.3);
+  border-radius: 36rpx;
+  box-shadow: 0 24rpx 56rpx rgba(43, 42, 40, 0.08);
+  padding: 26rpx;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
+  color: #fff;
+}
+
+.blue-card {
+  background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
+  border-color: rgba(75, 159, 255, 0.24);
+}
+
+.green-card {
+  background: linear-gradient(135deg, #effbf3 0%, #fff 100%);
+  border-color: rgba(99, 199, 132, 0.26);
+}
+
+.card-title {
+  align-items: center;
+  color: #172033;
+  display: flex;
+  font-size: 28rpx;
+  font-weight: 950;
+  gap: 16rpx;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
+.card-copy {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin: -4rpx 0 18rpx;
+}
+
+.section-name {
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 900;
+  margin-bottom: 12rpx;
+}
+
+.metric-main {
+  color: #fff;
+  font-size: 62rpx;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.metric-sub {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 24rpx;
+  line-height: 1.35;
+  margin-top: 14rpx;
+}
+
+.stats {
+  display: grid;
+  gap: 16rpx;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stat {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 30rpx;
+  box-shadow: 0 20rpx 44rpx rgba(43, 42, 40, 0.06);
+  min-height: 128rpx;
+  padding: 20rpx 12rpx;
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 40rpx;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.stat-label {
+  color: #7b8190;
+  font-size: 20rpx;
+  font-weight: 800;
+  margin-top: 10rpx;
+}
+
+.orange-text {
+  color: #f97316;
+}
+
+.green-text {
+  color: #36b86b;
+}
+
+.blue-text {
+  color: #2f80ed;
+}
+
+.list,
 .proxy-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16rpx;
 }
 
-.child-options {
+.row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 28rpx;
+  display: flex;
+  gap: 16rpx;
+  justify-content: space-between;
+  min-height: 108rpx;
+  padding: 20rpx 22rpx;
+}
+
+.row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.row-title {
+  color: #172033;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta,
+.row-remark {
+  color: #7b8190;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 8rpx;
+}
+
+.row-remark {
+  background: #f6f8fb;
+  border-radius: 14rpx;
+  padding: 10rpx 12rpx;
+}
+
+.row-actions {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10rpx;
+}
+
+.task-action-stack {
+  flex-direction: column;
+}
+
+.empty-row,
+.state-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 28rpx;
+  color: #7b8190;
+  display: flex;
+  flex-direction: column;
+  font-size: 26rpx;
+  justify-content: center;
+  min-height: 104rpx;
+  text-align: center;
+}
+
+.state-card {
+  gap: 18rpx;
+}
+
+.chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 14rpx;
+  margin-bottom: 18rpx;
 }
 
-.child-option-btn {
-  background: #f8fafc;
-  border: 1px solid #dbe3ef;
-  border-radius: 16px;
-  color: #475569;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.child-option-btn.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  color: #2563eb;
-}
-
-.plain-action-btn,
-.primary-action-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.plain-action-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-}
-
-.primary-action-btn {
-  background: #2563eb;
-  border: none;
-  color: #fff;
-}
-
-.home-page .navbar {
-  background: transparent;
-  padding: 8rpx 0 28rpx;
-}
-
-.home-page .greeting {
-  color: var(--sun-ink);
-  font-size: 42rpx;
-  font-weight: 800;
-}
-
-.home-page .family-name,
-.home-page .points-label {
-  color: var(--sun-muted);
-}
-
-.home-page .points-value,
-.home-page .task-reward,
-.home-page .reward-todo-meta {
-  color: #e9852c;
-}
-
-.home-page .summary-item,
-.home-page .stat-item,
-.home-page .task-item,
-.home-page .audit-item,
-.home-page .reward-todo-item,
-.home-page .state-block,
-.home-page .proxy-panel {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid rgba(255, 184, 77, 0.24);
-  border-radius: 28rpx;
-  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
-}
-
-.home-page .action-btn,
-.home-page .primary-action-btn,
-.home-page .btn-approve,
-.home-page .copy-btn {
-  background: var(--sun-action);
-  border: none;
+.home-page button,
+.home-page .btn {
+  align-items: center;
+  border: 0;
   border-radius: 999rpx;
+  box-shadow: 0 16rpx 32rpx rgba(255, 122, 69, 0.2);
   color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 24rpx;
+  font-weight: 900;
+  height: 60rpx;
+  justify-content: center;
+  line-height: 60rpx;
+  margin: 0;
+  min-height: 60rpx;
+  min-width: 112rpx;
+  padding: 0 24rpx;
+  white-space: nowrap;
+}
+
+.home-page .btn.primary {
+  background: var(--sun-action);
+}
+
+.home-page .btn.blue {
+  background: var(--sun-sky);
+  box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
+}
+
+.home-page .btn.green {
+  background: var(--sun-mint);
+  box-shadow: 0 16rpx 32rpx rgba(99, 199, 132, 0.18);
+}
+
+.home-page .btn.light {
+  background: #eef7ff;
+  border: 1rpx solid rgba(75, 159, 255, 0.18);
+  box-shadow: none;
+  color: #2f80ed;
+}
+
+.home-page .btn.danger {
+  background: #fff1f3;
+  border: 1rpx solid rgba(239, 107, 122, 0.2);
+  box-shadow: none;
+  color: #d95061;
+}
+
+.home-page .btn.small {
+  font-size: 22rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  min-height: 56rpx;
+  min-width: 88rpx;
+  padding: 0 20rpx;
 }
 
 .home-page .action-btn.claimed,
 .home-page .action-btn.recurringActive {
-  background: var(--sun-mint);
+  background: var(--sun-sky);
 }
 
-.home-page .plain-action-btn,
-.home-page .btn-reject,
+.home-page .action-btn.pending,
+.home-page .action-btn.completed {
+  background: #eef2f7;
+  box-shadow: none;
+  color: #8a95a5;
+}
+
+.home-page .chip,
 .home-page .child-option-btn {
-  background: #eef7ff;
-  border-color: rgba(75, 159, 255, 0.22);
-  border-radius: 999rpx;
-  color: var(--sun-sky);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid var(--sun-line);
+  box-shadow: none;
+  color: #697180;
+  font-size: 22rpx;
+  height: 62rpx;
+  line-height: 62rpx;
+  min-height: 62rpx;
+  min-width: 88rpx;
+  padding: 0 22rpx;
 }
 
+.home-page .chip.active,
 .home-page .child-option-btn.active {
   background: var(--sun-sky);
   border-color: var(--sun-sky);
+  box-shadow: 0 16rpx 36rpx rgba(75, 159, 255, 0.2);
   color: #fff;
 }
 
-.home-page button {
-  min-height: 64rpx;
-  height: auto;
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 800;
-  line-height: 64rpx;
-  padding: 0 26rpx;
+.retry-btn {
+  margin-top: 4rpx;
 }
 </style>

@@ -1,43 +1,42 @@
 <template>
   <view class="sun-page tasks-page">
-    <view class="header">
+    <view class="page-head">
       <view>
+        <text class="eyebrow">任务工作台</text>
         <text class="title">任务</text>
-        <text class="subtitle">{{ familyName }}</text>
+        <text class="subtitle">{{ isParentRole ? '发布、管理和持续领取任务' : '领取任务，完成后提交审核' }}</text>
       </view>
-      <view class="summary-pill">
-        <text class="summary-label">{{ isChild ? '当前积分' : '可用任务' }}</text>
-        <text class="summary-value">{{ isChild ? currentPoints : tasks.length }}</text>
-      </view>
+      <button v-if="isParentRole && !showTaskForm" class="btn primary" size="mini" @click="openTaskForm">发布</button>
     </view>
 
-    <view v-if="loading" class="state-block">
+    <view v-if="loading" class="card state-card">
       <text>正在加载任务...</text>
     </view>
 
-    <view v-else-if="loadError" class="state-block">
+    <view v-else-if="loadError" class="card state-card">
       <text>{{ loadError }}</text>
-      <button class="plain-action-btn retry-btn" size="mini" @click="loadTaskPage">重新加载</button>
+      <button class="btn light retry-btn" size="mini" @click="loadTaskPage">重新加载</button>
     </view>
 
-    <view v-else class="content">
-      <view v-if="isParentRole" class="create-panel">
-        <view class="create-header">
-          <view>
-            <text class="create-title">发布任务</text>
-            <text class="create-subtitle">给孩子增加一个可领取的任务</text>
-          </view>
-          <button v-if="!showTaskForm" class="small-primary-btn" size="mini" @click="openTaskForm">发布</button>
+    <view v-else class="tasks-content">
+      <view v-if="isParentRole" class="card hero-card create-panel">
+        <view class="card-title">
+          <text>{{ editingTaskId ? '编辑任务' : '发布任务' }}</text>
         </view>
+        <text class="card-copy">给孩子增加一个可领取的任务</text>
 
-        <view v-if="showTaskForm" class="create-form">
+        <view class="create-form">
           <view class="form-row">
             <text class="form-label">任务标题</text>
-            <input v-model.trim="taskForm.title" class="form-input" placeholder="例如：阅读 30 分钟" />
+            <view class="input-shell">
+              <input v-model.trim="taskForm.title" class="form-input hero-input" placeholder="例如：阅读 30 分钟" placeholder-class="hero-placeholder" />
+            </view>
           </view>
           <view class="form-row">
             <text class="form-label">奖励积分</text>
-            <input v-model="taskForm.points" class="form-input" type="number" placeholder="10" />
+            <view class="input-shell">
+              <input v-model="taskForm.points" class="form-input hero-input" type="number" placeholder="10" placeholder-class="hero-placeholder" />
+            </view>
           </view>
           <view class="form-row">
             <text class="form-label">任务周期</text>
@@ -55,62 +54,72 @@
             </view>
           </view>
           <view class="form-actions">
-            <button class="plain-action-btn" size="mini" :disabled="submittingTask" @click="cancelTaskForm">取消</button>
-            <button class="primary-action-btn" size="mini" :disabled="submittingTask" @click="publishTask">
-              {{ submittingTask ? '保存中' : submitTaskText }}
-            </button>
+            <text class="form-hint">同名任务会提醒，可确认继续</text>
+            <view class="form-buttons">
+              <button class="btn light" size="mini" :disabled="submittingTask" @click="cancelTaskForm">取消</button>
+              <button class="btn light" size="mini" :disabled="submittingTask" @click="publishTask">
+                {{ submittingTask ? '保存中' : submitTaskText }}
+              </button>
+            </view>
           </view>
         </view>
       </view>
 
-      <view v-if="isParentRole" class="section">
-        <view class="section-header">
-          <text class="section-title">任务管理</text>
-          <text class="section-count">{{ tasks.length }} 项</text>
+      <view v-if="isParentRole" class="card">
+        <view class="card-title">
+          <text>任务管理</text>
+          <text>{{ tasks.length }} 项</text>
         </view>
-        <view v-if="tasks.length === 0" class="state-block compact">
+        <view v-if="tasks.length === 0" class="empty-row">
           <text>暂无可管理任务</text>
         </view>
-        <view v-else class="task-list">
-          <view class="task-card" v-for="task in tasks" :key="task.id">
-            <view class="task-main">
-              <text class="task-title">{{ task.title }}</text>
-              <text class="task-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</text>
+        <view v-else class="list">
+          <view class="row task-row" v-for="task in tasks" :key="task.id">
+            <view class="row-main">
+              <text class="row-title">{{ task.title }}</text>
+              <text class="row-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</text>
             </view>
-            <view class="task-actions">
-              <button class="plain-action-btn" size="mini" @click="editTask(task)">编辑</button>
-              <button class="danger-action-btn" size="mini" @click="archiveExistingTask(task)">归档</button>
+            <view class="row-actions">
+              <button class="btn light" size="mini" @click="editTask(task)">编辑</button>
+              <button class="btn danger" size="mini" @click="archiveExistingTask(task)">归档</button>
             </view>
           </view>
         </view>
       </view>
 
-      <view v-if="isChild" class="section">
-        <view class="section-header">
-          <text class="section-title">我的任务</text>
-          <text class="section-count">{{ taskRows.length }} 项</text>
+      <view v-if="isChild" class="card hero-card points-card">
+        <text class="section-name">当前积分</text>
+        <text class="metric-main">{{ currentPoints }}</text>
+        <text class="metric-sub">{{ familyName }} · 可执行任务 {{ taskRows.length }} 项</text>
+      </view>
+
+      <view v-if="isChild" class="card green-card">
+        <view class="card-title">
+          <text>孩子领取状态</text>
+          <text>{{ taskRows.length }} 项</text>
         </view>
-        <view v-if="taskRows.length === 0" class="state-block compact">
+        <view v-if="taskRows.length === 0" class="empty-row">
           <text>暂无可执行任务</text>
         </view>
-        <view v-else class="task-list">
-          <view class="task-card" v-for="task in taskRows" :key="task.id">
-            <view class="task-main">
-              <text class="task-title">{{ task.title }}</text>
-              <text class="task-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</text>
+        <view v-else class="list">
+          <view class="row task-row" v-for="task in taskRows" :key="task.id">
+            <view class="row-main">
+              <text class="row-title">{{ task.title }}</text>
+              <text class="row-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }} · {{ taskButtonText(task) }}</text>
             </view>
-            <view class="child-task-actions">
+            <view class="row-actions child-task-actions">
               <button
-                class="action-btn"
+                class="btn blue action-btn"
                 :class="task.viewStatus"
                 :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
+                size="mini"
                 @click="handleTaskAction(task)"
               >
                 {{ taskButtonText(task) }}
               </button>
               <button
                 v-if="task.activeClaim && task.cycleType !== 'ONCE'"
-                class="plain-action-btn"
+                class="btn light"
                 size="mini"
                 @click="stopRecurringTaskClaim(task)"
               >
@@ -159,9 +168,9 @@ const taskForm = ref(defaultTaskForm())
 const editingTaskId = ref(0)
 
 const taskCycles = [
-  { label: '一次性', value: 'ONCE' },
   { label: '每日', value: 'DAILY' },
-  { label: '每周', value: 'WEEKLY' }
+  { label: '每周', value: 'WEEKLY' },
+  { label: '一次性', value: 'ONCE' }
 ]
 
 const roleType = computed(() => summary.value.roleType || currentFamily.value?.roleType || '')
@@ -510,330 +519,329 @@ function taskButtonText(task) {
 </script>
 
 <style>
-.container {
-  background: #f5f7fa;
-  min-height: 100vh;
-  padding: 48px 20px 24px;
+.tasks-page {
+  padding-left: 40rpx;
+  padding-right: 40rpx;
 }
 
-.header {
+.tasks-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.page-head {
   align-items: flex-start;
   display: flex;
+  gap: 20rpx;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 28rpx;
 }
 
+.eyebrow,
 .title,
-.subtitle {
+.subtitle,
+.card-copy,
+.section-name,
+.metric-main,
+.metric-sub,
+.form-label,
+.form-hint,
+.row-title,
+.row-meta {
   display: block;
+}
+
+.eyebrow {
+  color: #7a6c55;
+  font-size: 22rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
 }
 
 .title {
-  color: #1f2937;
-  font-size: 26px;
-  font-weight: 700;
-  margin-bottom: 6px;
+  color: #172033;
+  font-size: 50rpx;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.12;
 }
 
-.subtitle,
-.summary-label,
-.task-meta,
-.section-count {
-  color: #64748b;
-  font-size: 12px;
+.subtitle {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin-top: 14rpx;
 }
 
-.summary-pill {
-  align-items: flex-end;
-  background: #fff;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  min-width: 78px;
-  padding: 10px 12px;
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(255, 184, 77, 0.3);
+  border-radius: 36rpx;
+  box-shadow: 0 24rpx 56rpx rgba(43, 42, 40, 0.08);
+  padding: 26rpx;
 }
 
-.summary-value {
-  color: #2563eb;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.content,
-.section,
-.task-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.content,
-.section {
-  gap: 18px;
-}
-
-.section-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.section-title {
-  color: #1f2937;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.task-list {
-  gap: 12px;
-}
-
-.task-card,
-.state-block,
-.create-panel {
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px;
-}
-
-.task-card {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.task-main {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-
-.task-title {
-  color: #111827;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.task-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: 12px;
-}
-
-.child-task-actions {
-  align-items: flex-end;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  gap: 8px;
-  margin-left: 12px;
-}
-
-.action-btn,
-.plain-action-btn,
-.primary-action-btn,
-.danger-action-btn,
-.small-primary-btn {
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.action-btn,
-.primary-action-btn,
-.small-primary-btn {
-  background: #2563eb;
-  border: none;
+.hero-card {
+  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
 }
 
-.action-btn.claimed {
-  background: #10b981;
+.green-card {
+  background: linear-gradient(135deg, #effbf3 0%, #fff 100%);
+  border-color: rgba(99, 199, 132, 0.26);
 }
 
-.action-btn.recurringActive {
-  background: #10b981;
-}
-
-.action-btn.pending,
-.action-btn.completed {
-  background: #e5e7eb;
-  color: #64748b;
-}
-
-.plain-action-btn {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-}
-
-.danger-action-btn {
-  background: #fff;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-}
-
-.state-block {
-  color: #64748b;
-  font-size: 14px;
-  text-align: center;
-}
-
-.state-block.compact {
-  padding: 20px 16px;
-}
-
-.retry-btn {
-  margin-top: 12px;
-}
-
-.create-header {
+.card-title {
   align-items: center;
+  color: #172033;
   display: flex;
+  font-size: 28rpx;
+  font-weight: 950;
+  gap: 16rpx;
   justify-content: space-between;
+  margin-bottom: 18rpx;
 }
 
-.create-title,
-.create-subtitle {
-  display: block;
+.hero-card .card-title,
+.hero-card .form-label,
+.hero-card .form-hint,
+.hero-card .section-name,
+.hero-card .metric-main,
+.hero-card .metric-sub {
+  color: #fff;
 }
 
-.create-title {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 700;
+.card-copy {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin: -4rpx 0 22rpx;
 }
 
-.create-subtitle {
-  color: #64748b;
-  font-size: 12px;
-  margin-top: 4px;
+.section-name {
+  font-size: 24rpx;
+  font-weight: 900;
+  margin-bottom: 12rpx;
 }
 
-.create-form {
+.metric-main {
+  font-size: 62rpx;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.metric-sub {
+  font-size: 24rpx;
+  line-height: 1.35;
+  margin-top: 14rpx;
+}
+
+.create-form,
+.list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 16px;
+  gap: 16rpx;
 }
 
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12rpx;
 }
 
 .form-label {
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.input-shell {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.36);
+  border-radius: 24rpx;
+  display: flex;
+  min-height: 78rpx;
+  padding: 0 24rpx;
 }
 
 .form-input {
-  background: #f8fafc;
-  border-radius: 8px;
-  color: #111827;
-  font-size: 14px;
-  height: 40px;
-  padding: 0 12px;
+  color: #fff;
+  flex: 1;
+  font-size: 24rpx;
+  min-height: 76rpx;
+}
+
+.hero-placeholder {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .cycle-options {
-  display: flex;
-  gap: 8px;
-}
-
-.cycle-btn {
-  background: #f8fafc;
-  border: 1px solid #dbe3ef;
-  border-radius: 16px;
-  color: #475569;
-  font-size: 12px;
-  line-height: 30px;
-  margin: 0;
-  padding: 0 14px;
-}
-
-.cycle-btn.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  color: #2563eb;
+  display: grid;
+  gap: 16rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .form-actions {
+  align-items: center;
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  gap: 16rpx;
+  justify-content: space-between;
+  margin-top: 2rpx;
 }
 
-.tasks-page .header {
-  margin-bottom: 28rpx;
+.form-hint {
+  color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+  font-size: 22rpx;
+  line-height: 1.4;
 }
 
-.tasks-page .title {
-  color: var(--sun-ink);
-  font-size: 46rpx;
-  font-weight: 800;
+.form-buttons {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12rpx;
 }
 
-.tasks-page .subtitle,
-.tasks-page .summary-label,
-.tasks-page .task-meta,
-.tasks-page .section-count {
-  color: var(--sun-muted);
-}
-
-.tasks-page .summary-pill,
-.tasks-page .task-card,
-.tasks-page .state-block,
-.tasks-page .create-panel {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid rgba(255, 184, 77, 0.24);
+.row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1rpx solid var(--sun-line);
   border-radius: 28rpx;
-  box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
+  display: flex;
+  gap: 16rpx;
+  justify-content: space-between;
+  min-height: 108rpx;
+  padding: 20rpx 22rpx;
 }
 
-.tasks-page .summary-value,
-.tasks-page .task-title,
-.tasks-page .section-title,
-.tasks-page .create-title {
-  color: var(--sun-ink);
+.row-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.tasks-page .action-btn,
-.tasks-page .primary-action-btn,
-.tasks-page .small-primary-btn {
-  background: var(--sun-action);
+.row-title {
+  color: #172033;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  color: #7b8190;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 8rpx;
+}
+
+.row-actions,
+.child-task-actions {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10rpx;
+}
+
+.child-task-actions {
+  flex-direction: column;
+}
+
+.empty-row,
+.state-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--sun-line);
+  border-radius: 28rpx;
+  color: #7b8190;
+  display: flex;
+  flex-direction: column;
+  font-size: 26rpx;
+  justify-content: center;
+  min-height: 104rpx;
+  text-align: center;
+}
+
+.state-card {
+  gap: 18rpx;
+}
+
+.tasks-page button,
+.tasks-page .btn {
+  align-items: center;
+  border: 0;
   border-radius: 999rpx;
+  box-shadow: 0 16rpx 32rpx rgba(255, 122, 69, 0.2);
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 24rpx;
+  font-weight: 900;
+  height: 60rpx;
+  justify-content: center;
+  line-height: 60rpx;
+  margin: 0;
+  min-height: 60rpx;
+  min-width: 112rpx;
+  padding: 0 24rpx;
+  white-space: nowrap;
+}
+
+.tasks-page .btn.primary {
+  background: var(--sun-action);
+}
+
+.tasks-page .btn.blue {
+  background: var(--sun-sky);
+  box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
+}
+
+.tasks-page .btn.light {
+  background: #eef7ff;
+  border: 1rpx solid rgba(75, 159, 255, 0.18);
+  box-shadow: none;
+  color: #2f80ed;
+}
+
+.tasks-page .btn.danger {
+  background: #fff1f3;
+  border: 1rpx solid rgba(239, 107, 122, 0.2);
+  box-shadow: none;
+  color: #d95061;
+}
+
+.tasks-page .cycle-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+  color: #172033;
+  min-width: 0;
+  padding: 0 12rpx;
+}
+
+.tasks-page .cycle-btn.active {
+  background: #eef7ff;
+  border-color: rgba(75, 159, 255, 0.24);
+  color: #2f80ed;
 }
 
 .tasks-page .action-btn.claimed,
 .tasks-page .action-btn.recurringActive {
-  background: var(--sun-mint);
-}
-
-.tasks-page .plain-action-btn,
-.tasks-page .cycle-btn {
-  background: #eef7ff;
-  border-color: rgba(75, 159, 255, 0.22);
-  border-radius: 999rpx;
-  color: var(--sun-sky);
-}
-
-.tasks-page .cycle-btn.active {
   background: var(--sun-sky);
-  color: #fff;
 }
 
-.tasks-page button {
-  min-height: 64rpx;
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 800;
-  line-height: 64rpx;
-  padding: 0 26rpx;
+.tasks-page .action-btn.pending,
+.tasks-page .action-btn.completed {
+  background: #eef2f7;
+  box-shadow: none;
+  color: #8a95a5;
+}
+
+.retry-btn {
+  margin-top: 4rpx;
 }
 </style>
