@@ -604,4 +604,21 @@ function goBack() {
   box-shadow: none;
   color: #8a95a5;
 }
+
+.proxy-page .points-card {
+  align-items: stretch;
+  display: block;
+}
+
+.proxy-page .points-card .section-name {
+  margin-bottom: 10rpx;
+}
+
+.proxy-page .points-card .metric-main {
+  margin-bottom: 10rpx;
+}
+
+.proxy-page .filters {
+  margin-top: -6rpx;
+}
 </style>

@@ -91,33 +91,34 @@
         </view>
         <view v-else class="member-list">
           <view class="member-card" v-for="member in members" :key="member.id">
-            <view class="member-main">
-              <text class="member-name">{{ member.nickname }}</text>
-              <view class="tag-row">
-                <text class="role-tag">{{ roleName(member.roleType) }}</text>
-                <text v-if="member.isVirtual" class="virtual-tag">虚拟账号</text>
+            <view class="member-row">
+              <view class="member-main">
+                <text class="member-name">{{ member.nickname }}</text>
+                <view class="tag-row">
+                  <text class="role-tag">{{ roleName(member.roleType) }}</text>
+                  <text v-if="member.isVirtual" class="virtual-tag">虚拟账号</text>
+                </view>
+              </view>
+              <view class="member-side">
+                <text class="member-score">{{ member.currentPoints || 0 }}</text>
+                <text class="member-score-label">当前积分</text>
+                <button
+                  v-if="isParentRole && member.isVirtual"
+                  class="btn light bind-btn"
+                  size="mini"
+                  @click="createBindInvite(member)"
+                >
+                  邀请关联
+                </button>
               </view>
             </view>
-            <view class="member-side">
-              <text class="member-score">{{ member.currentPoints || 0 }}</text>
-              <text class="member-score-label">当前积分</text>
-              <button
-                v-if="isParentRole && member.isVirtual"
-                class="btn light bind-btn"
-                size="mini"
-                @click="createBindInvite(member)"
-              >
-                邀请关联
-              </button>
+            <view v-if="latestBindInvite && latestBindInvite.memberId === member.id" class="invite-result bind-result">
+              <text class="invite-label">虚拟孩子绑定码</text>
+              <text class="invite-token">{{ latestBindInvite.token }}</text>
+              <text class="invite-expire">有效期至 {{ formatTime(latestBindInvite.expiresAt) }}</text>
+              <button class="btn light copy-btn" size="mini" @click="copyBindInviteToken">复制绑定码</button>
             </view>
           </view>
-        </view>
-
-        <view v-if="latestBindInvite" class="invite-result">
-          <text class="invite-label">虚拟孩子绑定码</text>
-          <text class="invite-token">{{ latestBindInvite.token }}</text>
-          <text class="invite-expire">有效期至 {{ formatTime(latestBindInvite.expiresAt) }}</text>
-          <button class="btn light copy-btn" size="mini" @click="copyBindInviteToken">复制绑定码</button>
         </view>
       </view>
     </view>
@@ -301,10 +302,14 @@ function copyInviteToken() {
 }
 
 async function createBindInvite(member) {
-  latestBindInvite.value = await createVirtualChildBindInvite({
+  const invite = await createVirtualChildBindInvite({
     familyId: currentFamily.value.familyId,
     memberId: member.id
   })
+  latestBindInvite.value = {
+    ...invite,
+    memberId: member.id
+  }
   uni.showToast({ title: '绑定码已生成', icon: 'success' })
 }
 
@@ -387,7 +392,7 @@ function formatTime(value) {
 }
 
 .action-header,
-.member-card {
+.member-row {
   align-items: center;
   display: flex;
   justify-content: space-between;
@@ -617,6 +622,18 @@ function formatTime(value) {
   background: rgba(255, 255, 255, 0.84);
   border-color: #edf0f5;
   border-radius: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.member-row {
+  width: 100%;
+}
+
+.bind-result {
+  margin-top: 0;
+  width: 100%;
 }
 
 .form-input {

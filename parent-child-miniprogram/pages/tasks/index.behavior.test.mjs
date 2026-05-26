@@ -10,6 +10,7 @@ const pagesJson = fs.readFileSync(path.resolve(__dirname, '../../pages.json'), '
 assert.ok(pagesJson.includes('"path": "pages/tasks/index"'), 'pages.json 应注册任务页')
 assert.ok(pagesJson.includes('"pagePath": "pages/tasks/index"'), '底部菜单应包含任务入口')
 assert.ok(pageSource.includes('发布任务'), '任务页应提供发布任务入口')
+assert.ok(pageSource.includes('v-if="isParentRole && showTaskForm"'), '任务页发布表单默认应收起，点击发布后再展开')
 assert.ok(pageSource.includes('任务管理'), '任务页应提供任务管理区域')
 assert.ok(pageSource.includes('已存在同名任务，仍要继续吗？'), '任务页应对同名任务做前端提醒')
 assert.ok(pageSource.includes('confirmDuplicateTaskTitle'), '任务页应通过确认函数允许同名任务继续提交')

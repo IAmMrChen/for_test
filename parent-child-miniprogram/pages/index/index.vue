@@ -486,6 +486,8 @@ async function directApproveProxyTask(task, child) {
   let pendingRecord = task.record
   if (task.viewStatus === 'claimable') {
     pendingRecord = await submitTask({ familyId, taskId: task.id, memberId: child.id })
+  } else if (task.viewStatus === 'recurringActive') {
+    pendingRecord = await submitTask({ familyId, taskId: task.id, memberId: child.id })
   } else if (task.viewStatus === 'claimed') {
     pendingRecord = await submitTask({ familyId, recordId: task.record.id, memberId: child.id })
   }

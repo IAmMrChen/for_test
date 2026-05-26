@@ -10,3 +10,4 @@ assert.ok(source.includes('邀请关联'), '成员管理页应提供虚拟孩子
 assert.ok(source.includes('createVirtualChild'), '成员管理页应调用创建虚拟孩子接口')
 assert.ok(source.includes('createInvite'), '成员管理页应调用邀请接口')
 assert.ok(source.includes('createVirtualChildBindInvite'), '成员管理页应调用虚拟孩子绑定邀请接口')
+assert.ok(source.includes('latestBindInvite.memberId === member.id'), '虚拟孩子绑定码应显示在对应孩子卡片下')

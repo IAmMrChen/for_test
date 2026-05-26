@@ -52,20 +52,22 @@
         <text>暂无积分流水</text>
       </view>
 
-      <view v-else class="card log-section">
-        <view class="card-title">
-          <text>今天</text>
-        </view>
-        <view class="list">
-          <view class="row log-card" v-for="log in pointLogs" :key="log.id">
-            <view class="row-main">
-              <view class="log-title-row">
-                <text class="row-title">{{ log.sourceTitle || '未命名来源' }}</text>
-                <text class="source-tag">{{ sourceName(log.sourceType) }}</text>
+      <view v-else class="log-groups">
+        <view class="card log-section" v-for="group in groupedPointLogs" :key="group.key">
+          <view class="card-title">
+            <text>{{ group.title }}</text>
+          </view>
+          <view class="list">
+            <view class="row log-card" v-for="log in group.items" :key="log.id">
+              <view class="row-main">
+                <view class="log-title-row">
+                  <text class="row-title">{{ log.sourceTitle || '未命名来源' }}</text>
+                  <text class="source-tag">{{ sourceName(log.sourceType) }}</text>
+                </view>
+                <text class="row-meta">{{ log.nickname || '成员' }} · {{ formatTime(log.createdAt) }}</text>
               </view>
-              <text class="row-meta">{{ log.nickname || '成员' }} · {{ formatTime(log.createdAt) }}</text>
+              <text class="log-points" :class="{ negative: log.points < 0 }">{{ pointText(log.points) }}</text>
             </view>
-            <text class="log-points" :class="{ negative: log.points < 0 }">{{ pointText(log.points) }}</text>
           </view>
         </view>
       </view>
@@ -95,6 +97,24 @@ const roleType = computed(() => summary.value.roleType || currentFamily.value?.r
 const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleType.value))
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '当前家庭')
 const children = computed(() => members.value.filter((member) => member.roleType === 'CHILD'))
+const groupedPointLogs = computed(() => {
+  const groups = []
+  const groupMap = new Map()
+  for (const log of pointLogs.value) {
+    const key = dateKey(log.createdAt)
+    if (!groupMap.has(key)) {
+      const group = {
+        key,
+        title: dateGroupTitle(log.createdAt),
+        items: []
+      }
+      groups.push(group)
+      groupMap.set(key, group)
+    }
+    groupMap.get(key).items.push(log)
+  }
+  return groups
+})
 
 onShow(() => {
   loadPage()
@@ -193,6 +213,34 @@ function formatTime(value) {
   const hour = `${date.getHours()}`.padStart(2, '0')
   const minute = `${date.getMinutes()}`.padStart(2, '0')
   return `${month}-${day} ${hour}:${minute}`
+}
+
+function dateKey(value) {
+  if (!value) {
+    return 'unknown'
+  }
+  const date = new Date(value)
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+function dateGroupTitle(value) {
+  if (!value) {
+    return '未知日期'
+  }
+  const date = new Date(value)
+  const today = new Date()
+  if (date.toDateString() === today.toDateString()) {
+    return '今天'
+  }
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
+  if (date.toDateString() === yesterday.toDateString()) {
+    return '昨天'
+  }
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${month}-${day}`
 }
 </script>
 
@@ -471,6 +519,12 @@ function formatTime(value) {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+}
+
+.log-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
 }
 
 .row {

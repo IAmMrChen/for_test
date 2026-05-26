@@ -1138,4 +1138,26 @@ function formatTime(value) {
   color: #8a95a5;
 }
 
+.rewards-page .create-panel.hero-card {
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
+}
+
+.rewards-page .create-panel.hero-card .card-title,
+.rewards-page .create-panel.hero-card .form-label,
+.rewards-page .create-panel.hero-card .form-hint {
+  color: #fff;
+}
+
+.rewards-page .create-panel .input-shell {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.rewards-page .create-panel .form-input {
+  background: transparent;
+  color: #fff;
+}
+
 </style>

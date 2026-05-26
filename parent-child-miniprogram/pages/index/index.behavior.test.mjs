@@ -25,6 +25,7 @@ assert.ok(source.includes('startTaskClaim'), '首页孩子视图领取循环任�
 assert.ok(source.includes('stopTaskClaim'), '首页孩子视图应支持停止领取循环任务')
 assert.ok(source.includes('停止领取'), '首页孩子视图应展示停止领取按钮')
 assert.ok(source.includes('directApproveProxyTask'), '首页代孩子完成任务应支持直接通过')
+assert.ok(source.includes("task.viewStatus === 'recurringActive'"), '首页代孩子完成循环任务时应先提交当期记录再通过')
 assert.ok(source.includes('applyApprovedTaskRecord'), '审核通过后应本地更新状态而不是整页刷新')
 assert.ok(source.includes('removeRewardRecord'), '奖励发放或拒绝后应本地移除记录而不是整页刷新')
 assert.ok(!source.includes('await loadHome()'), '首页操作成功后不应整页刷新')

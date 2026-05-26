@@ -13,5 +13,7 @@ assert.ok(pageSource.includes('积分流水'), '积分流水页应展示页面�
 assert.ok(pageSource.includes('listPointLogs'), '积分流水页应加载积分流水')
 assert.ok(pageSource.includes('listMembers'), '积分流水页应支持家长按孩子筛选')
 assert.ok(pageSource.includes('selectedMemberId'), '积分流水页应维护筛选成员')
+assert.ok(pageSource.includes('groupedPointLogs'), '积分流水页应按真实日期分组，不应把所有记录都放在今天')
+assert.ok(pageSource.includes('dateGroupTitle'), '积分流水页应根据记录日期计算分组标题')
 assert.ok(pageSource.includes('loadError'), '积分流水页应有错误态')
 assert.ok(!pageSource.includes('throw error'), '积分流水页不应把加载错误直接抛到运行时')

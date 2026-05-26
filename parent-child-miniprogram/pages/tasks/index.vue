@@ -19,7 +19,7 @@
     </view>
 
     <view v-else class="tasks-content">
-      <view v-if="isParentRole" class="card hero-card create-panel">
+      <view v-if="isParentRole && showTaskForm" class="card hero-card create-panel">
         <view class="card-title">
           <text>{{ editingTaskId ? '编辑任务' : '发布任务' }}</text>
         </view>
