@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 	export default {
 		onLaunch: function() {
 			console.log('App Launch')
@@ -34,7 +34,7 @@
 		margin: 0;
 		border: 0;
 		border-radius: 999rpx;
-		background: var(--sun-action);
+		background: #ff7a45;
 		color: #fff;
 		font-size: 26rpx;
 		font-weight: 800;
@@ -64,7 +64,7 @@
 		min-height: 100vh;
 		padding: 92rpx 32rpx 160rpx;
 		background: linear-gradient(180deg, #fff7e7 0%, #eef7ff 42%, #f8fbff 100%);
-		color: var(--sun-ink);
+		color: #172033;
 	}
 
 	.sun-title {
@@ -72,7 +72,7 @@
 		font-size: 46rpx;
 		line-height: 1.18;
 		font-weight: 800;
-		color: var(--sun-ink);
+		color: #172033;
 	}
 
 	.sun-subtitle {
@@ -80,7 +80,7 @@
 		margin-top: 10rpx;
 		font-size: 24rpx;
 		line-height: 1.55;
-		color: var(--sun-muted);
+		color: #707887;
 	}
 
 	.sun-card {
@@ -99,14 +99,14 @@
 		gap: 16rpx;
 		font-size: 28rpx;
 		font-weight: 800;
-		color: var(--sun-ink);
+		color: #172033;
 	}
 
 	.sun-btn {
 		min-height: 72rpx;
 		border-radius: 999rpx;
 		padding: 0 28rpx;
-		background: var(--sun-action);
+		background: #ff7a45;
 		color: #fff;
 		font-size: 26rpx;
 		font-weight: 800;
@@ -116,7 +116,7 @@
 
 	.sun-btn.secondary {
 		background: #eef7ff;
-		color: var(--sun-sky);
+		color: #4b9fff;
 		border: 1rpx solid rgba(75, 159, 255, 0.22);
 	}
 
@@ -131,7 +131,7 @@
 		padding: 14rpx 22rpx;
 		border-radius: 999rpx;
 		background: rgba(255, 255, 255, 0.9);
-		border: 1rpx solid var(--sun-line);
+		border: 1rpx solid #edf0f5;
 		color: #697180;
 		font-size: 22rpx;
 		font-weight: 700;
@@ -140,8 +140,8 @@
 
 	.sun-chip.active {
 		color: #fff;
-		background: var(--sun-sky);
-		border-color: var(--sun-sky);
+		background: #4b9fff;
+		border-color: #4b9fff;
 		box-shadow: 0 8rpx 18rpx rgba(75, 159, 255, 0.2);
 	}
 
@@ -152,7 +152,7 @@
 	}
 
 	button.sun-chip.active {
-		background: var(--sun-sky);
+		background: #4b9fff;
 		color: #fff;
 	}
 </style>

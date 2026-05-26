@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page proxy-page">
     <view class="page-head">
       <view>
@@ -290,7 +290,7 @@ function goBack() {
 
 .state-card,
 .empty-text {
-  color: var(--sun-muted);
+  color: #707887;
   font-size: 26rpx;
   line-height: 1.5;
   text-align: center;
@@ -322,7 +322,7 @@ function goBack() {
 .points-label,
 .reward-meta,
 .points-hint {
-  color: var(--sun-muted);
+  color: #707887;
   font-size: 24rpx;
 }
 
@@ -361,7 +361,7 @@ function goBack() {
 }
 
 .reward-name {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 30rpx;
   font-weight: 800;
 }
@@ -438,7 +438,7 @@ function goBack() {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
   border-color: rgba(255, 255, 255, 0.36);
   box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
@@ -495,7 +495,7 @@ function goBack() {
 .row {
   align-items: center;
   background: rgba(255, 255, 255, 0.84);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   display: flex;
   gap: 16rpx;
@@ -537,7 +537,7 @@ function goBack() {
 .state-card {
   align-items: center;
   background: rgba(255, 255, 255, 0.7);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   color: #7b8190;
   display: flex;
@@ -571,7 +571,7 @@ function goBack() {
 }
 
 .proxy-page .btn.primary {
-  background: var(--sun-action);
+  background: #ff7a45;
 }
 
 .proxy-page .btn.light,
@@ -584,14 +584,14 @@ function goBack() {
 
 .proxy-page .chip {
   background: rgba(255, 255, 255, 0.9);
-  border-color: var(--sun-line);
+  border-color: #edf0f5;
   color: #697180;
   min-width: 88rpx;
 }
 
 .proxy-page .chip.active {
-  background: var(--sun-sky);
-  border-color: var(--sun-sky);
+  background: #4b9fff;
+  border-color: #4b9fff;
   box-shadow: 0 16rpx 36rpx rgba(75, 159, 255, 0.2);
   color: #fff;
 }

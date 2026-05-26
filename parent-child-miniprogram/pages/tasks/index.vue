@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page tasks-page">
     <view class="page-head">
       <view>
@@ -583,7 +583,7 @@ function taskButtonText(task) {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
   border-color: rgba(255, 255, 255, 0.36);
   box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
@@ -708,7 +708,7 @@ function taskButtonText(task) {
 .row {
   align-items: center;
   background: rgba(255, 255, 255, 0.84);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   display: flex;
   gap: 16rpx;
@@ -755,7 +755,7 @@ function taskButtonText(task) {
 .state-card {
   align-items: center;
   background: rgba(255, 255, 255, 0.7);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   color: #7b8190;
   display: flex;
@@ -792,11 +792,11 @@ function taskButtonText(task) {
 }
 
 .tasks-page .btn.primary {
-  background: var(--sun-action);
+  background: #ff7a45;
 }
 
 .tasks-page .btn.blue {
-  background: var(--sun-sky);
+  background: #4b9fff;
   box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
 }
 
@@ -831,7 +831,7 @@ function taskButtonText(task) {
 
 .tasks-page .action-btn.claimed,
 .tasks-page .action-btn.recurringActive {
-  background: var(--sun-sky);
+  background: #4b9fff;
 }
 
 .tasks-page .action-btn.pending,

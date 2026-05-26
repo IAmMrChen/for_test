@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page points-page">
     <view class="page-head">
       <view>
@@ -337,14 +337,14 @@ function formatTime(value) {
 }
 
 .points-page .title {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 46rpx;
   font-weight: 800;
 }
 
 .points-page .subtitle,
 .points-page .log-meta {
-  color: var(--sun-muted);
+  color: #707887;
 }
 
 .points-page .log-card,
@@ -361,22 +361,22 @@ function formatTime(value) {
   background: #eef7ff;
   border-color: rgba(75, 159, 255, 0.22);
   border-radius: 999rpx;
-  color: var(--sun-sky);
+  color: #4b9fff;
 }
 
 .points-page .filter-btn.active {
-  background: var(--sun-sky);
-  border-color: var(--sun-sky);
+  background: #4b9fff;
+  border-color: #4b9fff;
   color: #fff;
 }
 
 .points-page .source-tag {
   background: #eef7ff;
-  color: var(--sun-sky);
+  color: #4b9fff;
 }
 
 .points-page .log-points {
-  color: var(--sun-mint);
+  color: #63c784;
 }
 
 .points-page button {
@@ -476,7 +476,7 @@ function formatTime(value) {
 .row {
   align-items: center;
   background: rgba(255, 255, 255, 0.84);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   display: flex;
   gap: 16rpx;
@@ -545,14 +545,14 @@ function formatTime(value) {
 
 .points-page .chip {
   background: rgba(255, 255, 255, 0.9);
-  border-color: var(--sun-line);
+  border-color: #edf0f5;
   color: #697180;
   min-width: 88rpx;
 }
 
 .points-page .chip.active {
-  background: var(--sun-sky);
-  border-color: var(--sun-sky);
+  background: #4b9fff;
+  border-color: #4b9fff;
   box-shadow: 0 16rpx 36rpx rgba(75, 159, 255, 0.2);
   color: #fff;
 }

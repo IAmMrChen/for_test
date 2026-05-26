@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page profile-page">
     <view class="page-head">
       <view>
@@ -183,7 +183,7 @@ function roleName(role) {
 
 .hero-card {
   align-items: center;
-  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
   border-color: rgba(255, 255, 255, 0.36);
   color: #fff;
   display: flex;
@@ -305,7 +305,7 @@ function roleName(role) {
 }
 
 .profile-page .btn.blue {
-  background: var(--sun-sky);
+  background: #4b9fff;
   box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
 }
 

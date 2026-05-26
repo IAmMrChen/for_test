@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page family-select-page">
     <view class="page-head">
       <view>
@@ -265,14 +265,14 @@ function roleName(roleType) {
 }
 
 .title {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 50rpx;
   font-weight: 950;
   line-height: 1.12;
 }
 
 .subtitle {
-  color: var(--sun-muted);
+  color: #707887;
   font-size: 24rpx;
   line-height: 1.5;
   margin-top: 12rpx;
@@ -288,7 +288,7 @@ function roleName(roleType) {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 68%);
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 68%);
   border-color: rgba(255, 255, 255, 0.36);
   box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
@@ -301,7 +301,7 @@ function roleName(roleType) {
 
 .card-title {
   align-items: center;
-  color: var(--sun-ink);
+  color: #172033;
   display: flex;
   font-size: 28rpx;
   font-weight: 950;
@@ -311,7 +311,7 @@ function roleName(roleType) {
 
 .card-count,
 .muted {
-  color: var(--sun-muted);
+  color: #707887;
 }
 
 .card-heading {
@@ -350,7 +350,7 @@ function roleName(roleType) {
 }
 
 .form-input {
-  color: var(--sun-ink);
+  color: #172033;
   flex: 1;
   font-size: 26rpx;
   min-height: 72rpx;
@@ -388,7 +388,7 @@ function roleName(roleType) {
 .family-card {
   align-items: center;
   background: rgba(255, 255, 255, 0.86);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 30rpx;
   display: flex;
   gap: 20rpx;
@@ -424,7 +424,7 @@ function roleName(roleType) {
 }
 
 .row-title {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 28rpx;
   font-weight: 950;
   overflow: hidden;
@@ -433,7 +433,7 @@ function roleName(roleType) {
 }
 
 .row-meta {
-  color: var(--sun-muted);
+  color: #707887;
   font-size: 22rpx;
   line-height: 1.35;
   margin-top: 8rpx;
@@ -441,7 +441,7 @@ function roleName(roleType) {
 
 .state-row {
   align-items: center;
-  color: var(--sun-muted);
+  color: #707887;
   display: flex;
   flex-direction: column;
   font-size: 26rpx;
@@ -451,13 +451,13 @@ function roleName(roleType) {
 }
 
 .empty-title {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 30rpx;
   font-weight: 900;
 }
 
 .empty-desc {
-  color: var(--sun-muted);
+  color: #707887;
   font-size: 24rpx;
   line-height: 1.5;
 }
@@ -485,12 +485,12 @@ function roleName(roleType) {
 }
 
 .btn.primary {
-  background: var(--sun-action);
+  background: #ff7a45;
   color: #fff;
 }
 
 .btn.blue {
-  background: var(--sun-sky);
+  background: #4b9fff;
   color: #fff;
 }
 

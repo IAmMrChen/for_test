@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page rewards-page">
     <view class="page-head">
       <view>
@@ -777,7 +777,7 @@ function formatTime(value) {
 }
 
 .rewards-page .title {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 46rpx;
   font-weight: 800;
 }
@@ -788,7 +788,7 @@ function formatTime(value) {
 .rewards-page .reward-stock,
 .rewards-page .section-subtitle,
 .rewards-page .proxy-entry-subtitle {
-  color: var(--sun-muted);
+  color: #707887;
 }
 
 .rewards-page .summary-pill,
@@ -816,7 +816,7 @@ function formatTime(value) {
 .rewards-page .primary-btn,
 .rewards-page .small-primary-btn,
 .rewards-page .primary-action-btn {
-  background: var(--sun-action);
+  background: #ff7a45;
   border-radius: 999rpx;
 }
 
@@ -825,7 +825,7 @@ function formatTime(value) {
   background: #eef7ff;
   border-color: rgba(75, 159, 255, 0.22);
   border-radius: 999rpx;
-  color: var(--sun-sky);
+  color: #4b9fff;
 }
 
 .rewards-page button {
@@ -903,7 +903,7 @@ function formatTime(value) {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
   border-color: rgba(255, 255, 255, 0.36);
   box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
@@ -973,7 +973,7 @@ function formatTime(value) {
 .row {
   align-items: center;
   background: rgba(255, 255, 255, 0.84);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   display: flex;
   gap: 16rpx;
@@ -1015,7 +1015,7 @@ function formatTime(value) {
 .state-card {
   align-items: center;
   background: rgba(255, 255, 255, 0.7);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   color: #7b8190;
   display: flex;
@@ -1103,16 +1103,16 @@ function formatTime(value) {
 }
 
 .rewards-page .btn.primary {
-  background: var(--sun-action);
+  background: #ff7a45;
 }
 
 .rewards-page .btn.blue {
-  background: var(--sun-sky);
+  background: #4b9fff;
   box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
 }
 
 .rewards-page .btn.green {
-  background: var(--sun-mint);
+  background: #63c784;
   box-shadow: 0 16rpx 32rpx rgba(99, 199, 132, 0.18);
 }
 

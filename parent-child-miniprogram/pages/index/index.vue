@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page home-page">
     <view v-if="loading" class="card state-card">
       <text>正在加载首页...</text>
@@ -782,7 +782,7 @@ function formatTime(value) {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, var(--sun-primary) 0%, var(--sun-action) 66%);
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
   border-color: rgba(255, 255, 255, 0.36);
   box-shadow: 0 32rpx 64rpx rgba(255, 122, 69, 0.22);
   color: #fff;
@@ -845,7 +845,7 @@ function formatTime(value) {
 
 .stat {
   background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 30rpx;
   box-shadow: 0 20rpx 44rpx rgba(43, 42, 40, 0.06);
   min-height: 128rpx;
@@ -888,7 +888,7 @@ function formatTime(value) {
 .row {
   align-items: center;
   background: rgba(255, 255, 255, 0.84);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   display: flex;
   gap: 16rpx;
@@ -941,7 +941,7 @@ function formatTime(value) {
 .state-card {
   align-items: center;
   background: rgba(255, 255, 255, 0.7);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   color: #7b8190;
   display: flex;
@@ -985,16 +985,16 @@ function formatTime(value) {
 }
 
 .home-page .btn.primary {
-  background: var(--sun-action);
+  background: #ff7a45;
 }
 
 .home-page .btn.blue {
-  background: var(--sun-sky);
+  background: #4b9fff;
   box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
 }
 
 .home-page .btn.green {
-  background: var(--sun-mint);
+  background: #63c784;
   box-shadow: 0 16rpx 32rpx rgba(99, 199, 132, 0.18);
 }
 
@@ -1023,7 +1023,7 @@ function formatTime(value) {
 
 .home-page .action-btn.claimed,
 .home-page .action-btn.recurringActive {
-  background: var(--sun-sky);
+  background: #4b9fff;
 }
 
 .home-page .action-btn.pending,
@@ -1036,7 +1036,7 @@ function formatTime(value) {
 .home-page .chip,
 .home-page .child-option-btn {
   background: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   box-shadow: none;
   color: #697180;
   font-size: 22rpx;
@@ -1049,8 +1049,8 @@ function formatTime(value) {
 
 .home-page .chip.active,
 .home-page .child-option-btn.active {
-  background: var(--sun-sky);
-  border-color: var(--sun-sky);
+  background: #4b9fff;
+  border-color: #4b9fff;
   box-shadow: 0 16rpx 36rpx rgba(75, 159, 255, 0.2);
   color: #fff;
 }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="sun-page members-page">
     <view class="page-head">
       <view>
@@ -406,7 +406,7 @@ function formatTime(value) {
 
 .action-title,
 .member-name {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 30rpx;
   font-weight: 800;
 }
@@ -417,7 +417,7 @@ function formatTime(value) {
 .invite-expire,
 .empty-text,
 .member-count {
-  color: var(--sun-muted);
+  color: #707887;
   font-size: 24rpx;
   line-height: 1.45;
 }
@@ -434,7 +434,7 @@ function formatTime(value) {
 }
 
 .form-label {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 24rpx;
   font-weight: 800;
 }
@@ -442,7 +442,7 @@ function formatTime(value) {
 .form-input {
   background: #f8fafc;
   border-radius: 18rpx;
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 28rpx;
   height: 78rpx;
   padding: 0 22rpx;
@@ -505,7 +505,7 @@ function formatTime(value) {
 
 .role-tag {
   background: #eef7ff;
-  color: var(--sun-sky);
+  color: #4b9fff;
 }
 
 .virtual-tag {
@@ -522,7 +522,7 @@ function formatTime(value) {
 }
 
 .invite-token {
-  color: var(--sun-ink);
+  color: #172033;
   font-size: 26rpx;
   font-weight: 800;
   word-break: break-all;
@@ -615,7 +615,7 @@ function formatTime(value) {
 
 .member-card {
   background: rgba(255, 255, 255, 0.84);
-  border-color: var(--sun-line);
+  border-color: #edf0f5;
   border-radius: 28rpx;
 }
 
@@ -626,7 +626,7 @@ function formatTime(value) {
 
 .invite-result {
   background: rgba(255, 255, 255, 0.72);
-  border: 1rpx solid var(--sun-line);
+  border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
 }
 
@@ -652,11 +652,11 @@ function formatTime(value) {
 }
 
 .members-page .btn.primary {
-  background: var(--sun-action);
+  background: #ff7a45;
 }
 
 .members-page .btn.blue {
-  background: var(--sun-sky);
+  background: #4b9fff;
   box-shadow: 0 16rpx 32rpx rgba(75, 159, 255, 0.18);
 }
 
@@ -670,13 +670,13 @@ function formatTime(value) {
 
 .members-page .chip {
   background: rgba(255, 255, 255, 0.9);
-  border-color: var(--sun-line);
+  border-color: #edf0f5;
   color: #697180;
 }
 
 .members-page .chip.active {
-  background: var(--sun-sky);
-  border-color: var(--sun-sky);
+  background: #4b9fff;
+  border-color: #4b9fff;
   box-shadow: 0 16rpx 36rpx rgba(75, 159, 255, 0.2);
   color: #fff;
 }
