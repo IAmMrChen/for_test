@@ -72,26 +72,26 @@
       {
         "pagePath": "pages/index/index",
         "text": "首页",
-        "iconPath": "static/logo.png",
-        "selectedIconPath": "static/logo.png"
+        "iconPath": "static/tab/home-normal.png",
+        "selectedIconPath": "static/tab/home-active.png"
       },
       {
         "pagePath": "pages/tasks/index",
         "text": "任务",
-        "iconPath": "static/logo.png",
-        "selectedIconPath": "static/logo.png"
+        "iconPath": "static/tab/tasks-normal.png",
+        "selectedIconPath": "static/tab/tasks-active.png"
       },
       {
         "pagePath": "pages/rewards/index",
         "text": "奖励",
-        "iconPath": "static/logo.png",
-        "selectedIconPath": "static/logo.png"
+        "iconPath": "static/tab/rewards-normal.png",
+        "selectedIconPath": "static/tab/rewards-active.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "static/logo.png",
-        "selectedIconPath": "static/logo.png"
+        "iconPath": "static/tab/profile-normal.png",
+        "selectedIconPath": "static/tab/profile-active.png"
       }
     ]
   }

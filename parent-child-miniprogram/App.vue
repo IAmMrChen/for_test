@@ -62,7 +62,7 @@
 
 	.sun-page {
 		min-height: 100vh;
-		padding: 28rpx 28rpx 160rpx;
+		padding: 92rpx 32rpx 160rpx;
 		background: linear-gradient(180deg, #fff7e7 0%, #eef7ff 42%, #f8fbff 100%);
 		color: var(--sun-ink);
 	}
@@ -135,11 +135,24 @@
 		color: #697180;
 		font-size: 22rpx;
 		font-weight: 700;
+		box-shadow: none;
 	}
 
 	.sun-chip.active {
 		color: #fff;
 		background: var(--sun-sky);
 		border-color: var(--sun-sky);
+		box-shadow: 0 8rpx 18rpx rgba(75, 159, 255, 0.2);
+	}
+
+	button.sun-chip {
+		background: rgba(255, 255, 255, 0.9);
+		color: #697180;
+		box-shadow: none;
+	}
+
+	button.sun-chip.active {
+		background: var(--sun-sky);
+		color: #fff;
 	}
 </style>

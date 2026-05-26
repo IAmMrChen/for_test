@@ -14,3 +14,5 @@ assert.ok(!source.includes('toggleBindForm'), '选择家庭页不应有绑定入
 assert.ok(!source.includes('bindForm'), '选择家庭页不应维护绑定码表单状态')
 assert.ok(!source.includes('关联孩子'), '选择家庭页不应展示关联孩子入口')
 assert.ok(!source.includes('我的昵称'), '创建家庭表单不应要求输入创建人昵称')
+assert.ok(source.includes('create-family-card'), '选择家庭页应固定展示创建家庭大卡片入口')
+assert.ok(source.includes('创建一个新家庭'), '创建家庭入口应是页面首屏重点模块')

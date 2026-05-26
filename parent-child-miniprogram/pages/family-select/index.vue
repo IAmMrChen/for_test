@@ -5,20 +5,27 @@
         <text class="title">选择家庭</text>
         <text class="subtitle">进入一个家庭后，就可以查看任务、积分和奖励</text>
       </view>
-      <button class="create-top-btn" size="mini" @click="toggleCreateForm">创建家庭</button>
+      <button class="create-top-btn" size="mini" @click="openCreateForm">创建</button>
     </view>
 
-    <view v-if="showCreateForm" class="entry-panel">
-      <view class="form-row">
-        <text class="form-label">家庭名称</text>
-        <input v-model.trim="familyForm.name" class="form-input" placeholder="例如：陈家" />
+    <view class="create-family-card">
+      <view class="create-copy">
+        <text class="create-card-title">创建一个新家庭</text>
+        <text class="create-card-desc">创建人默认昵称为家主，之后可以邀请家人加入。</text>
       </view>
-      <view class="form-actions">
-        <button class="plain-action-btn" size="mini" :disabled="submittingFamily" @click="cancelCreateFamily">取消</button>
-        <button class="primary-action-btn" size="mini" :disabled="submittingFamily" @click="submitCreateFamily">
-          {{ submittingFamily ? '创建中' : '确认创建' }}
-        </button>
+      <view v-if="showCreateForm" class="create-form">
+        <view class="form-row">
+          <text class="form-label">家庭名称</text>
+          <input v-model.trim="familyForm.name" class="form-input create-input" placeholder="例如：温暖小家" />
+        </view>
+        <view class="form-actions">
+          <button class="plain-action-btn create-cancel-btn" size="mini" :disabled="submittingFamily" @click="cancelCreateFamily">取消</button>
+          <button class="primary-action-btn create-confirm-btn" size="mini" :disabled="submittingFamily" @click="submitCreateFamily">
+            {{ submittingFamily ? '创建中' : '确认创建' }}
+          </button>
+        </view>
       </view>
+      <button v-else class="primary-action-btn create-expand-btn" size="mini" @click="openCreateForm">开始创建</button>
     </view>
 
     <view class="invite-entry">
@@ -500,6 +507,54 @@ function roleName(roleType) {
   box-shadow: 0 14rpx 34rpx rgba(43, 42, 40, 0.08);
 }
 
+.family-select-page .create-family-card {
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 68%);
+  border-radius: 30rpx;
+  box-shadow: 0 18rpx 38rpx rgba(255, 122, 69, 0.24);
+  color: #fff;
+  margin-bottom: 24rpx;
+  padding: 28rpx;
+}
+
+.family-select-page .create-copy,
+.family-select-page .create-card-title,
+.family-select-page .create-card-desc {
+  display: block;
+}
+
+.family-select-page .create-card-title {
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.family-select-page .create-card-desc {
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 12rpx;
+  opacity: 0.92;
+}
+
+.family-select-page .create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+
+.family-select-page .create-input {
+  background: rgba(255, 255, 255, 0.24);
+  border: 1rpx solid rgba(255, 255, 255, 0.42);
+  color: #fff;
+}
+
+.family-select-page .create-cancel-btn,
+.family-select-page .create-confirm-btn,
+.family-select-page .create-expand-btn {
+  background: #eef7ff;
+  color: var(--sun-sky);
+  box-shadow: none;
+}
+
 .family-select-page .create-top-btn,
 .family-select-page .empty-create-btn,
 .family-select-page .primary-action-btn {
@@ -532,5 +587,13 @@ function roleName(roleType) {
   font-weight: 800;
   line-height: 64rpx;
   padding: 0 26rpx;
+}
+
+.family-select-page .create-family-card .create-cancel-btn,
+.family-select-page .create-family-card .create-confirm-btn,
+.family-select-page .create-family-card .create-expand-btn {
+  background: #eef7ff;
+  color: var(--sun-sky);
+  box-shadow: none;
 }
 </style>

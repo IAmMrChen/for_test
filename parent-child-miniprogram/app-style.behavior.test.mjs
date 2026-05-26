@@ -12,3 +12,6 @@ assert.ok(source.includes('page,'), '全局样式应把颜色变量挂到小程�
 assert.ok(source.includes('button::after'), '全局样式应移除微信 button 默认边框')
 assert.ok(source.includes('button[disabled]'), '全局样式应定义统一禁用态')
 assert.ok(source.includes('transform: scale(0.98)'), '全局样式应定义按钮按压反馈')
+assert.ok(source.includes('padding: 92rpx 32rpx 160rpx'), '自定义导航页面应预留顶部安全区')
+assert.ok(source.includes('.sun-chip.active'), '全局样式应定义选中胶囊按钮')
+assert.ok(source.includes('button.sun-chip.active'), '选中胶囊按钮应覆盖 button 默认文字色')
