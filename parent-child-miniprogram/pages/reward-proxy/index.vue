@@ -6,7 +6,10 @@
         <text class="title">代孩子兑换奖励</text>
         <text class="subtitle">支持真实孩子和虚拟孩子</text>
       </view>
-      <button class="btn light" size="mini" @click="goBack">返回</button>
+    </view>
+
+    <view class="head-actions">
+      <button class="btn light" size="mini" @click="goBack">返回奖励页</button>
     </view>
 
     <view v-if="loading" class="card state-card">
@@ -394,6 +397,12 @@ function goBack() {
   gap: 20rpx;
   justify-content: space-between;
   margin-bottom: 28rpx;
+}
+
+.head-actions {
+  display: flex;
+  gap: 14rpx;
+  margin: -14rpx 0 24rpx;
 }
 
 .eyebrow,

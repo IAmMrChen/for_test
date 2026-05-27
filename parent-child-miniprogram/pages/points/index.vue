@@ -6,7 +6,10 @@
         <text class="title">积分流水</text>
         <text class="subtitle">收入、兑换和调整都在这里</text>
       </view>
-      <button class="btn light" size="mini" @click="goBack">返回</button>
+    </view>
+
+    <view class="head-actions">
+      <button class="btn light" size="mini" @click="goBack">返回我的</button>
     </view>
 
     <view v-if="loading" class="card state-card">
@@ -453,6 +456,12 @@ function dateGroupTitle(value) {
   gap: 20rpx;
   justify-content: space-between;
   margin-bottom: 28rpx;
+}
+
+.head-actions {
+  display: flex;
+  gap: 14rpx;
+  margin: -14rpx 0 24rpx;
 }
 
 .eyebrow,

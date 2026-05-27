@@ -6,7 +6,6 @@
         <text class="title">任务</text>
         <text class="subtitle">{{ isParentRole ? '发布、管理和持续领取任务' : '领取任务，完成后提交审核' }}</text>
       </view>
-      <button v-if="isParentRole && !showTaskForm" class="btn primary" size="mini" @click="openTaskForm">发布</button>
     </view>
 
     <view v-if="loading" class="card state-card">
@@ -19,6 +18,14 @@
     </view>
 
     <view v-else class="tasks-content">
+      <view v-if="isParentRole && !showTaskForm" class="card blue-card action-entry" @click="openTaskForm">
+        <view class="entry-main">
+          <text class="entry-title">发布新任务</text>
+          <text class="entry-subtitle">新增一个孩子可领取的任务</text>
+        </view>
+        <button class="btn primary" size="mini" @click.stop="openTaskForm">发布</button>
+      </view>
+
       <view v-if="isParentRole && showTaskForm" class="card hero-card create-panel">
         <view class="card-title">
           <text>{{ editingTaskId ? '编辑任务' : '发布任务' }}</text>
@@ -592,6 +599,41 @@ function taskButtonText(task) {
 .green-card {
   background: linear-gradient(135deg, #effbf3 0%, #fff 100%);
   border-color: rgba(99, 199, 132, 0.26);
+}
+
+.blue-card {
+  background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
+  border-color: rgba(75, 159, 255, 0.24);
+}
+
+.action-entry {
+  align-items: center;
+  display: flex;
+  gap: 16rpx;
+  justify-content: space-between;
+}
+
+.entry-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.entry-title,
+.entry-subtitle {
+  display: block;
+}
+
+.entry-title {
+  color: #172033;
+  font-size: 28rpx;
+  font-weight: 950;
+}
+
+.entry-subtitle {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin-top: 8rpx;
 }
 
 .card-title {

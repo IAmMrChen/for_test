@@ -88,7 +88,10 @@
           <text class="title">今日看板</text>
           <text class="subtitle">先处理孩子正在等你的事</text>
         </view>
-        <button class="btn light" size="mini" @click="switchFamily">切换</button>
+      </view>
+
+      <view class="head-actions">
+        <button class="btn light" size="mini" @click="switchFamily">切换家庭</button>
       </view>
 
       <view class="stats">
@@ -736,6 +739,12 @@ function formatTime(value) {
   gap: 20rpx;
   justify-content: space-between;
   margin-bottom: 2rpx;
+}
+
+.head-actions {
+  display: flex;
+  gap: 14rpx;
+  margin: -6rpx 0 4rpx;
 }
 
 .eyebrow,

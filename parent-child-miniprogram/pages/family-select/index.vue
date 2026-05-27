@@ -6,7 +6,6 @@
         <text class="title">选择家庭</text>
         <text class="subtitle">进入家庭后查看任务、积分和奖励</text>
       </view>
-      <button class="btn primary" size="mini" @click="openCreateForm">创建</button>
     </view>
 
     <view class="card hero-card create-family-card">

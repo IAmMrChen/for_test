@@ -6,7 +6,10 @@
         <text class="title">我的</text>
         <text class="subtitle">家庭、成员和积分记录</text>
       </view>
-      <button class="btn light" size="mini" @click="switchFamily">切换</button>
+    </view>
+
+    <view class="head-actions">
+      <button class="btn light" size="mini" @click="switchFamily">切换家庭</button>
     </view>
 
     <view class="card hero-card user-card">
@@ -138,6 +141,12 @@ function roleName(role) {
   gap: 20rpx;
   justify-content: space-between;
   margin-bottom: 28rpx;
+}
+
+.head-actions {
+  display: flex;
+  gap: 14rpx;
+  margin: -14rpx 0 24rpx;
 }
 
 .eyebrow,
