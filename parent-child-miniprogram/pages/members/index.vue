@@ -9,7 +9,7 @@
     </view>
 
     <view class="head-actions">
-      <button class="btn light header-btn" size="mini" @click="goBack">返回我的</button>
+      <button class="btn light header-btn" size="mini" @click="goBack">返回</button>
     </view>
 
     <view v-if="loading" class="card state-card">
@@ -41,7 +41,7 @@
           </view>
         </view>
 
-        <view class="card action-card blue-card">
+        <view class="card action-card blue-card invite-card" :class="{ expanded: showInviteCreateForm }">
           <view class="action-header">
             <view>
               <text class="action-title">邀请成员</text>
@@ -50,23 +50,24 @@
             <button v-if="!showInviteCreateForm" class="btn blue action-mini" size="mini" @click="openInviteCreateForm">邀请</button>
           </view>
 
-          <view v-if="showInviteCreateForm" class="form-panel">
-            <view class="form-row">
-              <text class="form-label">加入角色</text>
-              <view class="role-options">
-                <button
-                  v-for="role in inviteRoleOptions"
-                  :key="role.value"
-                  class="chip"
-                  :class="{ active: inviteCreateForm.targetRole === role.value }"
-                  size="mini"
-                  @click="inviteCreateForm.targetRole = role.value"
-                >
-                  {{ role.label }}
-                </button>
-              </view>
+          <view v-if="showInviteCreateForm" class="invite-panel">
+            <view class="invite-panel-head">
+              <text class="form-label">选择加入身份</text>
+              <text class="invite-tip">{{ selectedInviteRoleTip }}</text>
             </view>
-            <view class="form-actions">
+            <view class="role-options invite-role-options">
+              <button
+                v-for="role in inviteRoleOptions"
+                :key="role.value"
+                class="chip role-chip"
+                :class="{ active: inviteCreateForm.targetRole === role.value }"
+                size="mini"
+                @click="inviteCreateForm.targetRole = role.value"
+              >
+                {{ role.label }}
+              </button>
+            </view>
+            <view class="form-actions invite-actions">
               <button class="btn light action-mini" size="mini" :disabled="submittingInviteCreate" @click="cancelInviteCreateForm">取消</button>
               <button class="btn primary action-mini" size="mini" :disabled="submittingInviteCreate" @click="submitCreateInvite">
                 {{ submittingInviteCreate ? '生成中' : '生成邀请' }}
@@ -157,19 +158,23 @@ const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleTy
 const inviteRoleOptions = computed(() => {
   if (roleType.value === 'OWNER') {
     return [
-      { label: '管理员', value: 'ADMIN' },
-      { label: '家长', value: 'PARENT' },
-      { label: '孩子', value: 'CHILD' }
+      { label: '管理员', value: 'ADMIN', tip: '可协助管理任务、奖励和家庭成员。' },
+      { label: '家长', value: 'PARENT', tip: '可发布任务、审核提交并发放奖励。' },
+      { label: '孩子', value: 'CHILD', tip: '可领取任务、提交完成记录并兑换奖励。' }
     ]
   }
   if (['ADMIN', 'PARENT'].includes(roleType.value)) {
     return [
-      { label: '家长', value: 'PARENT' },
-      { label: '孩子', value: 'CHILD' }
+      { label: '家长', value: 'PARENT', tip: '可发布任务、审核提交并发放奖励。' },
+      { label: '孩子', value: 'CHILD', tip: '可领取任务、提交完成记录并兑换奖励。' }
     ]
   }
   return []
 })
+const selectedInviteRoleTip = computed(() => (
+  inviteRoleOptions.value.find((role) => role.value === inviteCreateForm.value.targetRole)?.tip
+  || '加入后会自动获得所选身份。'
+))
 
 onShow(() => {
   loadMembersPage()
@@ -236,7 +241,7 @@ async function submitVirtualChild() {
       familyId: currentFamily.value.familyId,
       nickname
     })
-    members.value = [member, ...members.value]
+    members.value = [...members.value, member]
     uni.showToast({ title: '虚拟孩子已创建', icon: 'success' })
     showVirtualChildForm.value = false
     virtualChildForm.value = defaultVirtualChildForm()
@@ -462,10 +467,54 @@ function formatTime(value) {
   justify-content: flex-end;
 }
 
+.invite-card.expanded {
+  background: linear-gradient(135deg, #eef7ff 0%, #fffaf0 100%);
+}
+
+.invite-panel {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1rpx solid rgba(75, 159, 255, 0.16);
+  border-radius: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  margin-top: 22rpx;
+  padding: 20rpx;
+}
+
+.invite-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.invite-tip {
+  color: #707887;
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
 .role-options {
   display: flex;
   flex-wrap: wrap;
   gap: 14rpx;
+}
+
+.invite-role-options {
+  background: rgba(246, 248, 251, 0.78);
+  border-radius: 999rpx;
+  gap: 8rpx;
+  padding: 8rpx;
+}
+
+.invite-role-options .role-chip {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.invite-actions {
+  margin-top: 2rpx;
 }
 
 .member-list {
