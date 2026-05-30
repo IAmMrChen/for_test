@@ -26,7 +26,7 @@
     </view>
 
     <view v-else class="profile-content">
-      <view class="card blue-card entry-card" @click="goPointLogs">
+      <view class="card blue-card entry-card point-log-card" @click="goPointLogs">
         <view class="entry-main">
           <text class="entry-title">积分流水</text>
           <text class="entry-subtitle">查看积分收入、兑换和调整记录。</text>
@@ -338,6 +338,13 @@ function formatTime(value) {
 
 .entry-card {
   display: block;
+}
+
+.point-log-card {
+  align-items: center;
+  display: flex;
+  gap: 18rpx;
+  justify-content: space-between;
 }
 
 .entry-main {
