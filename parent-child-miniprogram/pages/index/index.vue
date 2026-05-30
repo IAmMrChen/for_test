@@ -741,10 +741,16 @@ function formatTime(value) {
   margin-bottom: 2rpx;
 }
 
+.page-head > view {
+  max-width: 460rpx;
+}
+
 .head-actions {
   display: flex;
   gap: 14rpx;
-  margin: -6rpx 0 4rpx;
+  justify-content: flex-end;
+  margin: -72rpx 0 24rpx;
+  min-height: 60rpx;
 }
 
 .eyebrow,

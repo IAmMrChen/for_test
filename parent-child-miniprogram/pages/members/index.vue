@@ -554,10 +554,16 @@ function formatTime(value) {
   margin-bottom: 28rpx;
 }
 
+.page-head > view {
+  max-width: 460rpx;
+}
+
 .head-actions {
   display: flex;
   gap: 14rpx;
-  margin: -14rpx 0 24rpx;
+  justify-content: flex-end;
+  margin: -98rpx 0 24rpx;
+  min-height: 60rpx;
 }
 
 .eyebrow,

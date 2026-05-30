@@ -8,6 +8,10 @@
       </view>
     </view>
 
+    <view v-if="isParentRole && !showTaskForm" class="head-actions">
+      <button class="btn primary" size="mini" @click="openTaskForm">发布任务</button>
+    </view>
+
     <view v-if="loading" class="card state-card">
       <text>正在加载任务...</text>
     </view>
@@ -18,14 +22,6 @@
     </view>
 
     <view v-else class="tasks-content">
-      <view v-if="isParentRole && !showTaskForm" class="card blue-card action-entry" @click="openTaskForm">
-        <view class="entry-main">
-          <text class="entry-title">发布新任务</text>
-          <text class="entry-subtitle">新增一个孩子可领取的任务</text>
-        </view>
-        <button class="btn primary" size="mini" @click.stop="openTaskForm">发布</button>
-      </view>
-
       <view v-if="isParentRole && showTaskForm" class="card hero-card create-panel">
         <view class="card-title">
           <text>{{ editingTaskId ? '编辑任务' : '发布任务' }}</text>
@@ -543,6 +539,18 @@ function taskButtonText(task) {
   gap: 20rpx;
   justify-content: space-between;
   margin-bottom: 28rpx;
+}
+
+.page-head > view {
+  max-width: 460rpx;
+}
+
+.head-actions {
+  display: flex;
+  gap: 14rpx;
+  justify-content: flex-end;
+  margin: -98rpx 0 24rpx;
+  min-height: 60rpx;
 }
 
 .eyebrow,
