@@ -14,7 +14,7 @@
 
     <view v-else class="rewards-content">
       <view v-if="isParentRole" class="card blue-card proxy-entry" @click="goRewardProxy">
-        <view class="card-title">
+        <view class="proxy-entry-head">
           <text>代孩子兑换奖励</text>
           <button class="btn blue" size="mini" @click.stop="goRewardProxy">进入</button>
         </view>
@@ -912,6 +912,37 @@ function formatTime(value) {
 .blue-card {
   background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
   border-color: rgba(75, 159, 255, 0.24);
+}
+
+.rewards-page .proxy-entry {
+  background: linear-gradient(135deg, #eef7ff 0%, #fff 100%);
+  border: 1rpx solid rgba(75, 159, 255, 0.34);
+  border-radius: 28rpx;
+  box-shadow: 0 18rpx 42rpx rgba(75, 159, 255, 0.08);
+  padding: 26rpx 28rpx;
+}
+
+.proxy-entry-head {
+  align-items: center;
+  color: #172033;
+  display: flex;
+  font-size: 28rpx;
+  font-weight: 950;
+  gap: 20rpx;
+  justify-content: space-between;
+  line-height: 1.25;
+}
+
+.proxy-entry-head > text {
+  flex: 1;
+  min-width: 0;
+}
+
+.rewards-page .proxy-entry .card-copy {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin: 14rpx 0 0;
 }
 
 .card-title {

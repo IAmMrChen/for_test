@@ -13,6 +13,8 @@ assert.ok(source.includes("member.roleType === 'CHILD'"), '首页代操作应支
 assert.ok(!source.includes('member.isVirtual'), '首页代操作不应只筛选虚拟孩子')
 assert.ok(!source.includes('查看全部任务'), '首页代孩子快捷区不应提供查看全部任务入口')
 assert.ok(source.includes('/pages/tasks/index'), '首页应能跳转到任务页')
+assert.ok(source.includes('justify-content: center'), '首页统计卡内容应垂直居中展示')
+assert.ok(source.includes('font-size: 44rpx'), '首页统计数字应有足够视觉权重')
 assert.ok(!source.includes('发布任务'), '首页不应展示发布任务表单')
 assert.ok(!source.includes('任务管理'), '首页不应展示完整任务管理列表')
 assert.ok(source.includes('支持真实孩子和虚拟孩子'), '首页代孩子模块应明确支持真实孩子和虚拟孩子')

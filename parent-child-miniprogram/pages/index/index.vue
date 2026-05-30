@@ -861,26 +861,31 @@ function formatTime(value) {
 }
 
 .stat {
+  align-items: center;
   background: rgba(255, 255, 255, 0.9);
   border: 1rpx solid #edf0f5;
   border-radius: 30rpx;
   box-shadow: 0 20rpx 44rpx rgba(43, 42, 40, 0.06);
-  min-height: 128rpx;
-  padding: 20rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 136rpx;
+  padding: 10rpx 12rpx 12rpx;
   text-align: center;
 }
 
 .stat-num {
-  font-size: 40rpx;
+  font-size: 44rpx;
   font-weight: 950;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .stat-label {
   color: #7b8190;
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 800;
-  margin-top: 10rpx;
+  line-height: 1.2;
+  margin-top: 12rpx;
 }
 
 .orange-text {
