@@ -35,23 +35,34 @@
       </view>
 
       <view v-if="isParentRole" class="card entry-card" @click="goMembers">
-        <view class="entry-main">
-          <text class="entry-title">家庭成员</text>
-          <text class="entry-subtitle">管理孩子、邀请家人和关联虚拟孩子</text>
-        </view>
-        <button class="btn light" size="mini" @click.stop="goMembers">管理</button>
-      </view>
+        <view class="member-section">
+          <view class="member-section-head">
+            <view>
+              <text class="entry-title">家庭成员</text>
+              <text class="entry-subtitle">管理孩子、邀请家人和关联虚拟孩子</text>
+            </view>
+            <button class="btn light" size="mini" @click.stop="goMembers">管理</button>
+          </view>
 
-      <view v-if="isParentRole" class="card green-card action-card">
-        <view class="card-title">
-          <text>成员管理互动件</text>
+          <view v-if="members.length === 0" class="empty-text">
+            <text>暂无家庭成员</text>
+          </view>
+          <view v-else class="member-list">
+            <view class="member-card" v-for="member in members" :key="member.id">
+              <view class="member-main">
+                <text class="member-name">{{ member.nickname }}</text>
+                <view class="tag-row">
+                  <text class="role-tag">{{ roleName(member.roleType) }}</text>
+                  <text v-if="member.isVirtual" class="virtual-tag">虚拟账号</text>
+                </view>
+              </view>
+              <view class="member-side">
+                <text class="member-score">{{ member.currentPoints || 0 }}</text>
+                <text class="member-score-label">当前积分</text>
+              </view>
+            </view>
+          </view>
         </view>
-        <view class="action-row">
-          <button class="btn blue" size="mini" @click="goMembers">邀请家长</button>
-          <button class="btn light" size="mini" @click="goMembers">邀请孩子</button>
-          <button class="btn light" size="mini" @click="goMembers">创建虚拟孩子</button>
-        </view>
-        <text class="entry-subtitle">新增成员相关动作统一收进管理员页，不挤占首页。</text>
       </view>
     </view>
   </view>
@@ -63,11 +74,13 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
+import { listMembers } from '../../api/member.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
 const currentFamily = ref(null)
 const summary = ref({})
+const members = ref([])
 
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '未选择家庭')
 const nickname = computed(() => summary.value.nickname || '我的')
@@ -92,7 +105,13 @@ async function loadProfile(retried = false) {
   loading.value = true
   try {
     await ensureDemoLogin()
-    summary.value = (await getDashboardSummary(family.familyId)) || {}
+    const summaryData = (await getDashboardSummary(family.familyId)) || {}
+    summary.value = summaryData
+    if (['OWNER', 'ADMIN', 'PARENT'].includes(summaryData.roleType || family.roleType)) {
+      members.value = (await listMembers(family.familyId)) || []
+    } else {
+      members.value = []
+    }
   } catch (error) {
     if (error.statusCode !== 401 || retried) {
       throw error
@@ -261,10 +280,7 @@ function roleName(role) {
 }
 
 .entry-card {
-  align-items: center;
-  display: flex;
-  gap: 16rpx;
-  justify-content: space-between;
+  display: block;
 }
 
 .entry-main {
@@ -278,19 +294,101 @@ function roleName(role) {
   font-weight: 950;
 }
 
-.card-title {
-  color: #172033;
-  display: flex;
-  font-size: 28rpx;
-  font-weight: 950;
-  margin-bottom: 18rpx;
+.member-section {
+  width: 100%;
 }
 
-.action-row {
+.member-section-head {
+  align-items: center;
+  display: flex;
+  gap: 16rpx;
+  justify-content: space-between;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+
+.member-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1rpx solid #edf0f5;
+  border-radius: 28rpx;
+  display: flex;
+  gap: 18rpx;
+  justify-content: space-between;
+  padding: 22rpx;
+}
+
+.member-main {
+  min-width: 0;
+}
+
+.member-name,
+.member-score,
+.member-score-label {
+  display: block;
+}
+
+.member-name {
+  color: #172033;
+  font-size: 28rpx;
+  font-weight: 950;
+}
+
+.member-side {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 6rpx;
+}
+
+.member-score {
+  color: #e9852c;
+  font-size: 34rpx;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.member-score-label,
+.empty-text {
+  color: #707887;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+
+.empty-text {
+  margin-top: 22rpx;
+  text-align: center;
+}
+
+.tag-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 14rpx;
-  margin-bottom: 16rpx;
+  gap: 10rpx;
+  margin-top: 10rpx;
+}
+
+.role-tag,
+.virtual-tag {
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  padding: 6rpx 14rpx;
+}
+
+.role-tag {
+  background: #eef7ff;
+  color: #4b9fff;
+}
+
+.virtual-tag {
+  background: #fff2cf;
+  color: #c26b18;
 }
 
 .state-card {
