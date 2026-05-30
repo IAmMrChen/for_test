@@ -919,6 +919,7 @@ function formatTime(value) {
   border: 1rpx solid rgba(75, 159, 255, 0.34);
   border-radius: 28rpx;
   box-shadow: 0 18rpx 42rpx rgba(75, 159, 255, 0.08);
+  display: block;
   padding: 26rpx 28rpx;
 }
 
@@ -936,6 +937,7 @@ function formatTime(value) {
 .proxy-entry-head > text {
   flex: 1;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .rewards-page .proxy-entry .card-copy {
