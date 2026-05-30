@@ -34,7 +34,7 @@
         <button class="btn blue" size="mini" @click.stop="goPointLogs">查看</button>
       </view>
 
-      <view v-if="isParentRole" class="card entry-card" @click="goMembers">
+      <view v-if="isParentRole" class="card entry-card">
         <view class="member-section">
           <view class="member-section-head">
             <view>
@@ -49,16 +49,32 @@
           </view>
           <view v-else class="member-list">
             <view class="member-card" v-for="member in members" :key="member.id">
-              <view class="member-main">
-                <text class="member-name">{{ member.nickname }}</text>
-                <view class="tag-row">
-                  <text class="role-tag">{{ roleName(member.roleType) }}</text>
-                  <text v-if="member.isVirtual" class="virtual-tag">虚拟账号</text>
+              <view class="member-row">
+                <view class="member-main">
+                  <text class="member-name">{{ member.nickname }}</text>
+                  <view class="tag-row">
+                    <text class="role-tag">{{ roleName(member.roleType) }}</text>
+                    <text v-if="member.isVirtual" class="virtual-tag">虚拟账号</text>
+                  </view>
+                </view>
+                <view class="member-side">
+                  <text class="member-score">{{ member.currentPoints || 0 }}</text>
+                  <text class="member-score-label">当前积分</text>
+                  <button
+                    v-if="member.isVirtual"
+                    class="btn light bind-btn"
+                    size="mini"
+                    @click.stop="createBindInvite(member)"
+                  >
+                    邀请关联
+                  </button>
                 </view>
               </view>
-              <view class="member-side">
-                <text class="member-score">{{ member.currentPoints || 0 }}</text>
-                <text class="member-score-label">当前积分</text>
+              <view v-if="latestBindInvite && latestBindInvite.memberId === member.id" class="invite-result bind-result">
+                <text class="invite-label">虚拟孩子绑定码</text>
+                <text class="invite-token">{{ latestBindInvite.token }}</text>
+                <text class="invite-expire">有效期至 {{ formatTime(latestBindInvite.expiresAt) }}</text>
+                <button class="btn light copy-btn" size="mini" @click="copyBindInviteToken">复制绑定码</button>
               </view>
             </view>
           </view>
@@ -74,13 +90,14 @@ import { onShow } from '@dcloudio/uni-app'
 
 import { ensureDemoLogin } from '../../api/auth.js'
 import { getDashboardSummary } from '../../api/dashboard.js'
-import { listMembers } from '../../api/member.js'
+import { createVirtualChildBindInvite, listMembers } from '../../api/member.js'
 import { getCurrentFamily } from '../../utils/storage.js'
 
 const loading = ref(false)
 const currentFamily = ref(null)
 const summary = ref({})
 const members = ref([])
+const latestBindInvite = ref(null)
 
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '未选择家庭')
 const nickname = computed(() => summary.value.nickname || '我的')
@@ -137,6 +154,34 @@ function goPointLogs() {
   uni.navigateTo({ url: '/pages/points/index' })
 }
 
+async function createBindInvite(member) {
+  const invite = await createVirtualChildBindInvite({
+    familyId: currentFamily.value.familyId,
+    memberId: member.id
+  })
+  latestBindInvite.value = {
+    ...invite,
+    memberId: member.id
+  }
+  uni.showToast({ title: '绑定码已生成', icon: 'success' })
+}
+
+function copyBindInviteToken() {
+  if (!latestBindInvite.value?.token) {
+    return
+  }
+
+  uni.setClipboardData({
+    data: latestBindInvite.value.token,
+    success() {
+      uni.showToast({ title: '绑定码已复制', icon: 'success' })
+    },
+    fail() {
+      uni.showToast({ title: '复制失败，请手动复制', icon: 'none' })
+    }
+  })
+}
+
 function roleName(role) {
   const map = {
     OWNER: '家主',
@@ -145,6 +190,18 @@ function roleName(role) {
     CHILD: '孩子'
   }
   return map[role] || '成员'
+}
+
+function formatTime(value) {
+  if (!value) {
+    return ''
+  }
+  const date = new Date(value)
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  const hour = `${date.getHours()}`.padStart(2, '0')
+  const minute = `${date.getMinutes()}`.padStart(2, '0')
+  return `${month}-${day} ${hour}:${minute}`
 }
 </script>
 
@@ -313,14 +370,21 @@ function roleName(role) {
 }
 
 .member-card {
-  align-items: center;
   background: rgba(255, 255, 255, 0.84);
   border: 1rpx solid #edf0f5;
   border-radius: 28rpx;
   display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  padding: 22rpx;
+}
+
+.member-row {
+  align-items: center;
+  display: flex;
   gap: 18rpx;
   justify-content: space-between;
-  padding: 22rpx;
+  width: 100%;
 }
 
 .member-main {
@@ -343,7 +407,6 @@ function roleName(role) {
   align-items: flex-end;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   gap: 6rpx;
 }
 
@@ -389,6 +452,43 @@ function roleName(role) {
 .virtual-tag {
   background: #fff2cf;
   color: #c26b18;
+}
+
+.bind-btn {
+  margin-top: 10rpx;
+}
+
+.invite-result {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1rpx solid #edf0f5;
+  border-radius: 24rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 18rpx;
+  width: 100%;
+}
+
+.invite-label,
+.invite-token,
+.invite-expire {
+  display: block;
+}
+
+.invite-label,
+.invite-expire {
+  color: #707887;
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
+.invite-token {
+  color: #172033;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 1.45;
+  word-break: break-all;
 }
 
 .state-card {
