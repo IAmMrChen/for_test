@@ -158,9 +158,12 @@
               <text class="row-title">{{ task.title }}</text>
               <text class="row-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }} · {{ taskButtonText(task) }}</text>
             </view>
-            <view class="row-actions child-task-actions">
+            <view
+              class="row-actions child-task-actions"
+              :class="{ compact: task.activeClaim && task.cycleType !== 'ONCE' }"
+            >
               <button
-                class="btn blue action-btn"
+                class="btn blue action-btn task-submit-btn"
                 :class="task.viewStatus"
                 :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
                 size="mini"
@@ -170,7 +173,7 @@
               </button>
               <button
                 v-if="task.activeClaim && task.cycleType !== 'ONCE'"
-                class="btn light"
+                class="btn light stop-claim-btn"
                 size="mini"
                 @click="stopRecurringTaskClaim(task)"
               >
@@ -890,9 +893,24 @@ function taskButtonText(task) {
   gap: 10rpx;
 }
 
-.child-task-actions {
+.tasks-page .child-task-actions {
   align-items: center;
   flex-direction: row;
+}
+
+.tasks-page .child-task-actions.compact {
+  align-items: center;
+  flex-direction: row !important;
+  gap: 8rpx;
+  justify-content: flex-end;
+  width: 224rpx;
+}
+
+.tasks-page .child-task-actions.compact .task-submit-btn,
+.tasks-page .child-task-actions.compact .stop-claim-btn {
+  font-size: 22rpx;
+  min-width: 104rpx;
+  padding: 0 12rpx;
 }
 
 .empty-row,

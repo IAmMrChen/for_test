@@ -31,6 +31,9 @@ assert.ok(pageSource.includes('stopTaskClaim'), 'recurring tasks should call sto
 assert.ok(pageSource.includes('停止领取'), 'task page should provide stop claim button')
 assert.ok(pageSource.includes('.child-task-actions'), 'child task operation area should have dedicated layout')
 assert.ok(pageSource.includes('flex-direction: row'), 'submit and stop claim buttons should be arranged horizontally')
+assert.ok(pageSource.includes('child-task-actions"'), 'child task action view should keep the dedicated action class')
+assert.ok(pageSource.includes('compact: task.activeClaim'), 'recurring claimed tasks should get compact horizontal action layout')
+assert.ok(pageSource.includes('stop-claim-btn'), 'stop claim button should have a dedicated compact style hook')
 
 const publishTaskSource = pageSource.slice(pageSource.indexOf('async function publishTask'), pageSource.indexOf('function editTask'))
 assert.ok(!publishTaskSource.includes('await loadTaskPage()'), 'publishing or editing should not refresh the whole task page')
