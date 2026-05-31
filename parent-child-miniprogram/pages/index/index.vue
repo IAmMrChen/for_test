@@ -268,7 +268,9 @@ const proxyTaskRows = computed(() => {
   const claimed = proxyClaimedRecords.value.filter((record) => record.memberId === child.id)
   const pending = parentPendingRecords.value.filter((record) => record.memberId === child.id)
   const approved = proxyApprovedRecords.value.filter((record) => record.memberId === child.id)
-  return tasks.value.map((task) => taskRowForRecords(task, claimed, pending, approved))
+  return tasks.value
+    .map((task) => taskRowForRecords(task, claimed, pending, approved))
+    .filter(Boolean)
 })
 
 const proxyVisibleTaskRows = computed(() => {
