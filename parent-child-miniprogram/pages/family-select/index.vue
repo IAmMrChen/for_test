@@ -303,8 +303,8 @@ function roleName(roleType) {
 .invite-card {
   box-sizing: border-box;
   display: block;
-  padding-bottom: 18rpx;
-  padding-top: 20rpx;
+  padding-bottom: 16rpx;
+  padding-top: 18rpx;
   width: auto;
 }
 
@@ -314,7 +314,7 @@ function roleName(roleType) {
 }
 
 .invite-card .card-title {
-  margin-bottom: 8rpx;
+  margin-bottom: 4rpx;
 }
 
 .invite-card.expanded .card-title {
@@ -322,9 +322,12 @@ function roleName(roleType) {
 }
 
 .invite-card .muted {
-  font-size: 22rpx;
-  line-height: 1.35;
+  font-size: 20rpx;
+  line-height: 1.2;
   margin-top: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .invite-card.expanded .muted {
