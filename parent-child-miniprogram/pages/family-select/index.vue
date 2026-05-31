@@ -64,7 +64,7 @@
         <text>已有邀请码？</text>
         <button class="btn light" size="mini" @click="toggleInviteForm">{{ showInviteForm ? '收起' : '展开' }}</button>
       </view>
-      <text class="card-copy muted">邀请码作为低权重入口，不占据首屏主体。</text>
+      <text v-if="showInviteForm" class="card-copy muted">邀请码作为低权重入口，不占据首屏主体。</text>
 
       <view v-if="showInviteForm" class="form-panel invite-form">
         <view class="input-shell normal-input">
@@ -303,7 +303,7 @@ function roleName(roleType) {
 .invite-card {
   box-sizing: border-box;
   display: block;
-  padding-bottom: 16rpx;
+  padding-bottom: 18rpx;
   padding-top: 18rpx;
   width: auto;
 }
@@ -314,7 +314,7 @@ function roleName(roleType) {
 }
 
 .invite-card .card-title {
-  margin-bottom: 4rpx;
+  margin-bottom: 0;
 }
 
 .invite-card.expanded .card-title {
