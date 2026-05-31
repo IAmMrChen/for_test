@@ -29,6 +29,8 @@ assert.ok(pageSource.includes('taskClaims'), 'task page should keep recurring ta
 assert.ok(pageSource.includes('startTaskClaim'), 'recurring tasks should call start claim API')
 assert.ok(pageSource.includes('stopTaskClaim'), 'recurring tasks should call stop claim API')
 assert.ok(pageSource.includes('停止领取'), 'task page should provide stop claim button')
+assert.ok(pageSource.includes('.child-task-actions'), 'child task operation area should have dedicated layout')
+assert.ok(pageSource.includes('flex-direction: row'), 'submit and stop claim buttons should be arranged horizontally')
 
 const publishTaskSource = pageSource.slice(pageSource.indexOf('async function publishTask'), pageSource.indexOf('function editTask'))
 assert.ok(!publishTaskSource.includes('await loadTaskPage()'), 'publishing or editing should not refresh the whole task page')

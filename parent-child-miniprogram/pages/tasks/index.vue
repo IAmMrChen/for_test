@@ -891,7 +891,8 @@ function taskButtonText(task) {
 }
 
 .child-task-actions {
-  flex-direction: column;
+  align-items: center;
+  flex-direction: row;
 }
 
 .empty-row,
