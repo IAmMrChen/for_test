@@ -22,9 +22,9 @@
     </view>
 
     <view v-else class="tasks-content">
-      <view v-if="isParentRole && showTaskForm" class="card hero-card create-panel">
+      <view v-if="isParentRole && showTaskForm && !editingTaskId" class="card hero-card create-panel">
         <view class="card-title">
-          <text>{{ editingTaskId ? '编辑任务' : '发布任务' }}</text>
+          <text>发布任务</text>
         </view>
         <text class="card-copy">给孩子增加一个可领取的任务</text>
 
@@ -61,7 +61,7 @@
             <view class="form-buttons">
               <button class="btn light" size="mini" :disabled="submittingTask" @click="cancelTaskForm">取消</button>
               <button class="btn light" size="mini" :disabled="submittingTask" @click="publishTask">
-                {{ submittingTask ? '保存中' : submitTaskText }}
+                {{ submittingTask ? '保存中' : '确认发布' }}
               </button>
             </view>
           </view>
@@ -77,14 +77,62 @@
           <text>暂无可管理任务</text>
         </view>
         <view v-else class="list">
-          <view class="row task-row" v-for="task in tasks" :key="task.id">
-            <view class="row-main">
-              <text class="row-title">{{ task.title }}</text>
-              <text class="row-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</text>
+          <view class="task-item" v-for="task in tasks" :key="task.id">
+            <view class="row task-row">
+              <view class="row-main">
+                <text class="row-title">{{ task.title }}</text>
+                <text class="row-meta">+{{ task.points }} 积分 · {{ cycleLabel(task.cycleType) }}</text>
+              </view>
+              <view class="row-actions">
+                <button class="btn light" size="mini" :disabled="editingTaskId === task.id" @click="editTask(task)">
+                  {{ editingTaskId === task.id ? '编辑中' : '编辑' }}
+                </button>
+                <button class="btn danger" size="mini" @click="archiveExistingTask(task)">归档</button>
+              </view>
             </view>
-            <view class="row-actions">
-              <button class="btn light" size="mini" @click="editTask(task)">编辑</button>
-              <button class="btn danger" size="mini" @click="archiveExistingTask(task)">归档</button>
+
+            <view v-if="editingTaskId === task.id" class="inline-edit-panel">
+              <view class="card-title inline-edit-title">
+                <text>编辑任务</text>
+              </view>
+              <view class="create-form inline-edit-form">
+                <view class="form-row">
+                  <text class="form-label">任务标题</text>
+                  <view class="input-shell">
+                    <input v-model.trim="taskForm.title" class="form-input hero-input" placeholder="例如：阅读 30 分钟" placeholder-class="hero-placeholder" />
+                  </view>
+                </view>
+                <view class="form-row">
+                  <text class="form-label">奖励积分</text>
+                  <view class="input-shell">
+                    <input v-model="taskForm.points" class="form-input hero-input" type="number" placeholder="10" placeholder-class="hero-placeholder" />
+                  </view>
+                </view>
+                <view class="form-row">
+                  <text class="form-label">任务周期</text>
+                  <view class="cycle-options">
+                    <button
+                      v-for="cycle in taskCycles"
+                      :key="cycle.value"
+                      class="cycle-btn"
+                      :class="{ active: taskForm.cycleType === cycle.value }"
+                      size="mini"
+                      @click="taskForm.cycleType = cycle.value"
+                    >
+                      {{ cycle.label }}
+                    </button>
+                  </view>
+                </view>
+                <view class="form-actions">
+                  <text class="form-hint">修改后会影响之后孩子看到的任务信息</text>
+                  <view class="form-buttons">
+                    <button class="btn light" size="mini" :disabled="submittingTask" @click="cancelTaskForm">取消</button>
+                    <button class="btn light" size="mini" :disabled="submittingTask" @click="publishTask">
+                      {{ submittingTask ? '保存中' : '确认保存' }}
+                    </button>
+                  </view>
+                </view>
+              </view>
             </view>
           </view>
         </view>
@@ -181,7 +229,6 @@ const isChild = computed(() => roleType.value === 'CHILD')
 const isParentRole = computed(() => ['OWNER', 'ADMIN', 'PARENT'].includes(roleType.value))
 const familyName = computed(() => summary.value.familyName || currentFamily.value?.familyName || '当前家庭')
 const currentPoints = computed(() => summary.value.currentPoints || 0)
-const submitTaskText = computed(() => editingTaskId.value ? '确认保存' : '确认发布')
 
 const taskRows = computed(() => {
   return tasks.value.map((task) => {
@@ -351,28 +398,31 @@ async function publishTask() {
   try {
     const familyId = currentFamily.value.familyId
     if (editingTaskId.value) {
-      await updateTask({
+      const taskId = editingTaskId.value
+      const updatedTask = await updateTask({
         ...payload,
         familyId,
-        taskId: editingTaskId.value
+        taskId
       })
+      applyUpdatedTask(updatedTask || { ...payload, id: taskId, familyId })
       uni.showToast({ title: '任务已更新', icon: 'success' })
     } else {
-      await createTask({
+      const createdTask = await createTask({
         ...payload,
         familyId
       })
+      applyCreatedTask(createdTask || { ...payload, familyId })
       uni.showToast({ title: '任务已发布', icon: 'success' })
     }
     showTaskForm.value = false
     resetTaskForm()
-    await loadTaskPage()
   } finally {
     submittingTask.value = false
   }
 }
 
 function editTask(task) {
+  showTaskForm.value = false
   editingTaskId.value = task.id
   taskForm.value = {
     title: task.title,
@@ -380,6 +430,25 @@ function editTask(task) {
     cycleType: task.cycleType
   }
   showTaskForm.value = true
+}
+
+function applyCreatedTask(task) {
+  tasks.value = [
+    task,
+    ...tasks.value.filter((item) => item.id !== task.id)
+  ]
+}
+
+function applyUpdatedTask(task) {
+  tasks.value = tasks.value.map((item) => {
+    if (item.id !== task.id) {
+      return item
+    }
+    return {
+      ...item,
+      ...task
+    }
+  })
 }
 
 async function archiveExistingTask(task) {
@@ -694,6 +763,30 @@ function taskButtonText(task) {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+}
+
+.task-item {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.inline-edit-panel {
+  background: linear-gradient(135deg, #ffb84d 0%, #ff7a45 66%);
+  border: 1rpx solid rgba(255, 255, 255, 0.36);
+  border-radius: 30rpx;
+  box-shadow: 0 24rpx 48rpx rgba(255, 122, 69, 0.18);
+  padding: 24rpx;
+}
+
+.inline-edit-title {
+  color: #fff;
+  margin-bottom: 18rpx;
+}
+
+.inline-edit-panel .form-label,
+.inline-edit-panel .form-hint {
+  color: #fff;
 }
 
 .form-row {
