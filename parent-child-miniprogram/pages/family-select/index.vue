@@ -301,17 +301,36 @@ function roleName(roleType) {
 }
 
 .invite-card {
-  display: inline-block;
-  max-width: 520rpx;
-  min-width: 0;
-  padding-bottom: 24rpx;
+  box-sizing: border-box;
+  display: block;
+  padding-bottom: 18rpx;
+  padding-top: 20rpx;
   width: auto;
 }
 
 .invite-card.expanded {
-  display: block;
-  max-width: none;
-  width: auto;
+  padding-bottom: 26rpx;
+  padding-top: 26rpx;
+}
+
+.invite-card .card-title {
+  margin-bottom: 8rpx;
+}
+
+.invite-card.expanded .card-title {
+  margin-bottom: 18rpx;
+}
+
+.invite-card .muted {
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 0;
+}
+
+.invite-card.expanded .muted {
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 12rpx;
 }
 
 .card-title {
