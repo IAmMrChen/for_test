@@ -21,3 +21,7 @@ parent-child-miniprogram/unpackage/
 # OS noise
 .DS_Store
 Thumbs.db
+
+
+parent-child-miniprogram/config/env.js
+parent-child-miniprogram/manifest.json
