@@ -17,11 +17,11 @@ parent-child-api/conf.toml
 
 # Uni-app / mini-program build output
 parent-child-miniprogram/unpackage/
+parent-child-miniprogram/config/env.js
+parent-child-miniprogram/manifest.json
 
 # OS noise
 .DS_Store
 Thumbs.db
 
 
-parent-child-miniprogram/config/env.js
-parent-child-miniprogram/manifest.json
