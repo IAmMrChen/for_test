@@ -34,6 +34,7 @@ assert.ok(pageSource.includes('flex-direction: row'), 'submit and stop claim but
 assert.ok(pageSource.includes('child-task-actions"'), 'child task action view should keep the dedicated action class')
 assert.ok(pageSource.includes('compact: task.activeClaim'), 'recurring claimed tasks should get compact horizontal action layout')
 assert.ok(pageSource.includes('stop-claim-btn'), 'stop claim button should have a dedicated compact style hook')
+assert.ok(pageSource.indexOf('stop-claim-btn') < pageSource.indexOf('task-submit-btn'), 'stop claim button should appear before submit button')
 
 const publishTaskSource = pageSource.slice(pageSource.indexOf('async function publishTask'), pageSource.indexOf('function editTask'))
 assert.ok(!publishTaskSource.includes('await loadTaskPage()'), 'publishing or editing should not refresh the whole task page')

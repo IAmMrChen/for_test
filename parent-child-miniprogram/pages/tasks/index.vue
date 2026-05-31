@@ -163,6 +163,14 @@
               :class="{ compact: task.activeClaim && task.cycleType !== 'ONCE' }"
             >
               <button
+                v-if="task.activeClaim && task.cycleType !== 'ONCE'"
+                class="btn light stop-claim-btn"
+                size="mini"
+                @click="stopRecurringTaskClaim(task)"
+              >
+                停止领取
+              </button>
+              <button
                 class="btn blue action-btn task-submit-btn"
                 :class="task.viewStatus"
                 :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
@@ -170,14 +178,6 @@
                 @click="handleTaskAction(task)"
               >
                 {{ taskButtonText(task) }}
-              </button>
-              <button
-                v-if="task.activeClaim && task.cycleType !== 'ONCE'"
-                class="btn light stop-claim-btn"
-                size="mini"
-                @click="stopRecurringTaskClaim(task)"
-              >
-                停止领取
               </button>
             </view>
           </view>

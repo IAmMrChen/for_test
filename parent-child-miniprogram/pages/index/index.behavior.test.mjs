@@ -29,6 +29,7 @@ assert.ok(source.includes('停止领取'), 'child view should show stop claim bu
 assert.ok(source.includes('task-action-stack'), 'home child task actions should have a dedicated action layout')
 assert.ok(source.includes('compact: task.activeClaim'), 'home recurring claimed tasks should use compact horizontal actions')
 assert.ok(source.includes('flex-direction: row !important'), 'home submit and stop claim buttons should be forced horizontal')
+assert.ok(source.indexOf('stop-claim-btn') < source.indexOf('task-submit-btn'), 'home stop claim button should appear before submit button')
 assert.ok(source.includes('directApproveProxyTask'), 'proxy task panel should support direct approval')
 assert.ok(source.includes("task.viewStatus === 'recurringActive'"), 'proxy recurring task should submit current period before approval')
 assert.ok(source.includes('applyApprovedTaskRecord'), 'approval should update local state instead of refreshing whole page')
