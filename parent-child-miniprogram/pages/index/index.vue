@@ -38,9 +38,12 @@
               <text class="row-title">{{ task.title }}</text>
               <text class="row-meta">+{{ task.points }} 积分 · {{ cycleText(task.cycleType) }} · {{ taskStatusText(task) }}</text>
             </view>
-            <view class="row-actions task-action-stack">
+            <view
+              class="row-actions task-action-stack"
+              :class="{ compact: task.activeClaim && task.cycleType !== 'ONCE' }"
+            >
               <button
-                class="btn blue action-btn"
+                class="btn blue action-btn task-submit-btn"
                 :class="task.viewStatus"
                 :disabled="task.viewStatus === 'pending' || task.viewStatus === 'completed'"
                 size="mini"
@@ -959,6 +962,21 @@ function formatTime(value) {
 
 .task-action-stack {
   flex-direction: column;
+}
+
+.home-page .task-action-stack.compact {
+  align-items: center;
+  flex-direction: row !important;
+  gap: 8rpx;
+  justify-content: flex-end;
+  width: 224rpx;
+}
+
+.home-page .task-action-stack.compact .task-submit-btn,
+.home-page .task-action-stack.compact .stop-claim-btn {
+  font-size: 22rpx;
+  min-width: 104rpx;
+  padding: 0 12rpx;
 }
 
 .empty-row,
