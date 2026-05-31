@@ -59,7 +59,7 @@
       </view>
     </view>
 
-    <view class="card blue-card invite-card">
+    <view class="card blue-card invite-card" :class="{ expanded: showInviteForm }">
       <view class="card-title">
         <text>已有邀请码？</text>
         <button class="btn light" size="mini" @click="toggleInviteForm">{{ showInviteForm ? '收起' : '展开' }}</button>
@@ -71,10 +71,12 @@
           <input v-model.trim="inviteForm.token" class="form-input" placeholder="输入家人发来的邀请码" />
         </view>
         <view class="form-actions">
-          <button class="btn light" size="mini" :disabled="submittingInvite" @click="cancelAcceptInvite">取消</button>
-          <button class="btn primary" size="mini" :disabled="submittingInvite" @click="submitAcceptInvite">
-            {{ submittingInvite ? '加入中' : '确认加入' }}
-          </button>
+          <view class="form-buttons">
+            <button class="btn light" size="mini" :disabled="submittingInvite" @click="cancelAcceptInvite">取消</button>
+            <button class="btn primary" size="mini" :disabled="submittingInvite" @click="submitAcceptInvite">
+              {{ submittingInvite ? '加入中' : '确认加入' }}
+            </button>
+          </view>
         </view>
       </view>
     </view>
@@ -298,6 +300,20 @@ function roleName(roleType) {
   border-color: rgba(75, 159, 255, 0.24);
 }
 
+.invite-card {
+  display: inline-block;
+  max-width: 520rpx;
+  min-width: 0;
+  padding-bottom: 24rpx;
+  width: auto;
+}
+
+.invite-card.expanded {
+  display: block;
+  max-width: none;
+  width: auto;
+}
+
 .card-title {
   align-items: center;
   color: #172033;
@@ -344,8 +360,9 @@ function roleName(roleType) {
 }
 
 .normal-input {
-  background: #f6f8fb;
-  border-color: transparent;
+  background: #fff;
+  border-color: rgba(75, 159, 255, 0.18);
+  box-shadow: inset 0 0 0 1rpx rgba(237, 240, 245, 0.72);
 }
 
 .form-input {
@@ -370,6 +387,16 @@ function roleName(roleType) {
   display: flex;
   gap: 18rpx;
   justify-content: space-between;
+}
+
+.invite-form .form-actions {
+  justify-content: flex-end;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 14rpx;
+  justify-content: flex-end;
 }
 
 .create-preview {
