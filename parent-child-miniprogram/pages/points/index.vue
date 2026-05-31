@@ -9,7 +9,7 @@
     </view>
 
     <view class="head-actions">
-      <button class="btn light" size="mini" @click="goBack">返回我的</button>
+      <button class="btn light" size="mini" @click="goBack">返回</button>
     </view>
 
     <view v-if="loading" class="card state-card">
@@ -51,7 +51,7 @@
         <text class="card-copy">先按成员筛选并按时间倒序展示；近一年分页和日期筛选放到后续规划。</text>
       </view>
 
-      <view v-if="pointLogs.length === 0" class="card state-card">
+      <view v-if="pointLogs.length === 0" class="card state-card empty-log-card">
         <text>暂无积分流水</text>
       </view>
 
@@ -577,10 +577,17 @@ function dateGroupTitle(value) {
 }
 
 .state-card {
+  align-items: center;
   color: #7b8190;
+  display: flex;
+  justify-content: center;
   font-size: 26rpx;
   min-height: 104rpx;
   text-align: center;
+}
+
+.empty-log-card {
+  min-height: 120rpx;
 }
 
 .points-page button,
